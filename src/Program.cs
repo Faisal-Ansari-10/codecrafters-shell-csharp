@@ -76,7 +76,7 @@ class Program
 
         var startInfo = new ProcessStartInfo
         {
-            FileName = executablePath,
+            FileName = exeName,
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,

@@ -1,9 +1,10 @@
 using System;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 class Program
 {
     private static readonly string[] Builtincommands = ["echo", "exit", "type"];
-    private static readonly bool IsWindows = OperatingSystem.IsWindows();
     private static readonly string[] WindowsExtensions = [".exe", ".bat", ".cmd", ".com", ".ps1", ".msi"];
 
     static void Main()
@@ -60,7 +61,7 @@ class Program
         var pathVariable = Environment.GetEnvironmentVariable("PATH");
         if (string.IsNullOrEmpty(pathVariable)) return null;
 
-        var extensions = IsWindows ? WindowsExtensions : [""];
+        var extensions = OperatingSystem.IsWindows() ? WindowsExtensions : [""];
         var directories = pathVariable.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
 
         foreach (var directory in directories)
@@ -75,7 +76,7 @@ class Program
                 if (!Path.Exists(filePath))
                     continue;
 
-                if (IsExecutable(filePath))
+                if (OperatingSystem.IsWindows() || IsExecutable(filePath))
                     return filePath;
             }
         }
@@ -83,12 +84,13 @@ class Program
         return null;
     }
 
+    [UnsupportedOSPlatform("windows")]
     private static bool IsExecutable(string filePath)
     {
         const UnixFileMode executeMask = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
         try
         {
-            return IsWindows || (File.GetUnixFileMode(filePath) & executeMask) != 0;
+            return  (File.GetUnixFileMode(filePath) & executeMask) != 0;
         }
         catch
         {

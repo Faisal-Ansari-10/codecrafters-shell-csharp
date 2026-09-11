@@ -6,14 +6,13 @@ class Program
         {
             Console.Write("$ ");
             var command = Console.ReadLine() ?? "";
-            var splits = command.Split(" ");
-            if (splits[0] == "exit")
+            if (command == "exit")
             {
                 break;
             }
-            else if (splits[0] == "echo")
+            else if (command.StartsWith("echo "))
             {
-                Console.WriteLine($"{string.Join(" ", splits[1..])}");
+                Console.WriteLine($"{command[5..]}");
             }
             else
             {

@@ -29,50 +29,22 @@ class Program
     {
         if (command.StartsWith("echo "))
         {
-            string args = command[5..];
-            StringBuilder output = new();
-
-            for(int i = 0; i < args.Length;)
-            {
-                if(args[i] == '\'')
-                {
-                    while(++i < args.Length && args[i] != '\'')
-                    {
-                        output.Append(args[i]);
-                    }
-                    i++;
-                } else if (args[i] == '"')
-                {
-                    while(++i < args.Length && args[i] != '"')
-                    {
-                        if(args[i] == '\\') i++;
-                        output.Append(args[i]);
-                    }
-                    i++;
-                } else if(args[i] == '\\')
-                {
-                    if(++i < args.Length) output.Append(args[i++]);
-                } else if(args[i] == ' ')
-                {
-                    output.Append(' ');
-                    while(++i < args.Length && args[i] == ' ');
-                } else
-                {
-                    while(i < args.Length && !(args[i] == ' ' || args[i] == '\'' || args[i] == '"' || args[i] == '\\'))
-                    {
-                        output.Append(args[i++]);
-                    }
-                }
-            }
-            Console.WriteLine(output.ToString().Trim());
+            var (cleanedCommand, fileName) = ExtractOutputRedirect(command[5..]);
+            var output = HandleEcho(cleanedCommand);
+            PrintOutput(output, fileName);
         }
         else if (command.StartsWith("type "))
         {
-            HandleType(command[5..]);
+            var (cleanedCommand, fileName) = ExtractOutputRedirect(command[5..]);
+            var output = HandleType(cleanedCommand[5..]);
+            PrintOutput(output, fileName);
+
         }
         else if (command == "pwd")
         {
-            Console.WriteLine(Directory.GetCurrentDirectory());
+            var (_, fileName) = ExtractOutputRedirect(command[5..]);
+            var output = Directory.GetCurrentDirectory();
+            PrintOutput(output, fileName);
         }
         else if (command.StartsWith("cd "))
         {
@@ -80,42 +52,89 @@ class Program
         }
         else
         {
-            ExecuteExternalCommand(command);
+            var (cleanedCommand, fileName) = ExtractOutputRedirect(command);
+            var (output, error) = ExecuteExternalCommand(cleanedCommand);
+
+            PrintOutput(output, fileName);
+            if (error is not null)
+                Console.Write(error);
         }
     }
 
-    private static void HandleType(string argCommand)
+    private static string HandleEcho(string args)
     {
+        StringBuilder output = new();
+
+        for (int i = 0; i < args.Length;)
+        {
+            if (args[i] == '\'')
+            {
+                while (++i < args.Length && args[i] != '\'')
+                {
+                    output.Append(args[i]);
+                }
+                i++;
+            }
+            else if (args[i] == '"')
+            {
+                while (++i < args.Length && args[i] != '"')
+                {
+                    if (args[i] == '\\') i++;
+                    output.Append(args[i]);
+                }
+                i++;
+            }
+            else if (args[i] == '\\')
+            {
+                if (++i < args.Length) output.Append(args[i++]);
+            }
+            else if (args[i] == ' ')
+            {
+                output.Append(' ');
+                while (++i < args.Length && args[i] == ' ') ;
+            }
+            else
+            {
+                while (i < args.Length && !(args[i] == ' ' || args[i] == '\'' || args[i] == '"' || args[i] == '\\'))
+                {
+                    output.Append(args[i++]);
+                }
+            }
+        }
+
+        return output.ToString().Trim();
+    }
+
+
+    private static string HandleType(string argCommand)
+    {
+        string output = $"{argCommand}: not found";
         if (BuiltinCommands.Contains(argCommand))
         {
-            Console.WriteLine($"{argCommand} is a shell builtin");
-            return;
+            output = $"{argCommand} is a shell builtin";
+
         }
 
         var executablePath = FindExecutable(argCommand);
         if (executablePath is not null)
         {
-            Console.WriteLine($"{argCommand} is {executablePath}");
+            output = $"{argCommand} is {executablePath}";
         }
-        else
-        {
-            Console.WriteLine($"{argCommand}: not found");
-        }
+
+        return output;
     }
 
-    private static void ExecuteExternalCommand(string command)
+    private static (string output, string? error) ExecuteExternalCommand(string command)
     {
         var tokens = ParseCommandStrings(command);
+
         if (tokens.Count == 0)
-            return;
+            return (string.Empty, null);
 
         var exeName = tokens[0];
         var executablePath = FindExecutable(exeName);
         if (executablePath is null)
-        {
-            Console.WriteLine($"{command}: not found");
-            return;
-        }
+            return (string.Empty, $"{command}: not found");
 
         var startInfo = new ProcessStartInfo
         {
@@ -133,24 +152,24 @@ class Program
 
         using var process = new Process { StartInfo = startInfo };
 
-        var output = new StringBuilder();
-        var error = new StringBuilder();
+        var outputBuilder = new StringBuilder();
+        var errorBuilder = new StringBuilder();
 
-        process.OutputDataReceived += (_, e) => { if (e.Data is not null) output.AppendLine(e.Data); };
-        process.ErrorDataReceived += (_, e) => { if (e.Data is not null) error.AppendLine(e.Data); };
+        process.OutputDataReceived += (_, e) => { if (e.Data is not null) outputBuilder.AppendLine(e.Data); };
+        process.ErrorDataReceived += (_, e) => { if (e.Data is not null) errorBuilder.AppendLine(e.Data); };
 
         process.Start();
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         process.WaitForExit();
 
-        if (output.Length > 0)
-            Console.Write(output.ToString());
+        var output = outputBuilder.ToString();
+        var error = errorBuilder.Length > 0 ? errorBuilder.ToString() : null;
 
-        if (error.Length > 0)
-            Console.Write(error.ToString());
+
+
+        return (output, error);
     }
-
     private static void ChangeDirectory(string directory)
     {
         if (directory == "~")
@@ -176,72 +195,63 @@ class Program
         if (string.IsNullOrWhiteSpace(command))
             return tokens;
 
-        var currentToken = new StringBuilder();
-        bool inDoubleQuotes = false;
-        bool inSingleQuotes = false;
-        bool hasToken = false;
+        var current = new StringBuilder();
+        int i = 0;
 
-        for (int i = 0; i < command.Length; i++)
+        while (i < command.Length)
         {
             char c = command[i];
 
-            if (c == '\\' && !inSingleQuotes)
+            if (c == '\'')
             {
-                if (inDoubleQuotes)
+                i++;
+                while (i < command.Length && command[i] != '\'')
+                    current.Append(command[i++]);
+                i++;
+            }
+            else if (c == '"')
+            {
+                i++;
+                while (i < command.Length && command[i] != '"')
                 {
-                    if (i + 1 < command.Length && "\\$`\"".IndexOf(command[i + 1]) >= 0)
+                    if (command[i] == '\\' && i + 1 < command.Length && "\\$`\"".IndexOf(command[i + 1]) >= 0)
                     {
-                        currentToken.Append(command[i + 1]);
-                        i++;
+                        current.Append(command[i + 1]);
+                        i += 2;
                     }
                     else
                     {
-                        currentToken.Append(c);
+                        current.Append(command[i++]);
                     }
                 }
-                else if (i + 1 < command.Length)
+                i++;
+            }
+            else if (c == '\\')
+            {
+                i++;
+                if (i < command.Length) current.Append(command[i++]);
+            }
+            else if (char.IsWhiteSpace(c))
+            {
+                if (current.Length > 0)
                 {
-                    currentToken.Append(command[i + 1]);
-                    i++;
+                    tokens.Add(current.ToString());
+                    current.Clear();
                 }
-
-                hasToken = true;
-                continue;
+                while (++i < command.Length && char.IsWhiteSpace(command[i])) ;
             }
-
-            if (c == '"' && !inSingleQuotes)
+            else
             {
-                inDoubleQuotes = !inDoubleQuotes;
-                hasToken = true;
-                continue;
-            }
-
-            if (c == '\'' && !inDoubleQuotes)
-            {
-                inSingleQuotes = !inSingleQuotes;
-                hasToken = true;
-                continue;
-            }
-
-            if (char.IsWhiteSpace(c) && !inDoubleQuotes && !inSingleQuotes)
-            {
-                if (hasToken)
+                while (i < command.Length && !char.IsWhiteSpace(command[i]) &&
+                       command[i] != '\'' && command[i] != '"' && command[i] != '\\')
                 {
-                    tokens.Add(currentToken.ToString());
-                    currentToken.Clear();
-                    hasToken = false;
+                    current.Append(command[i++]);
                 }
-                continue;
             }
-
-            currentToken.Append(c);
-            hasToken = true;
         }
 
-        if (hasToken)
-        {
-            tokens.Add(currentToken.ToString());
-        }
+        if (current.Length > 0)
+            tokens.Add(current.ToString());
 
         return tokens;
     }
@@ -289,5 +299,35 @@ class Program
         {
             return false;
         }
+    }
+
+    private static (string command, string? fileName) ExtractOutputRedirect(string command)
+    {
+        var idx = command.IndexOf("> ", StringComparison.Ordinal);
+        if (idx < 0)
+            return (command, null);
+
+        var cleaned = command[..idx].TrimEnd();
+        var fileName = command[(idx + 2)..].Trim();
+
+        return (cleaned, string.IsNullOrEmpty(fileName) ? null : fileName);
+    }
+    private static void PrintOutput(string output, string? fileName = null)
+    {
+        if (string.IsNullOrEmpty(fileName))
+        {
+            Console.WriteLine(output);
+            return;
+        }
+
+        try
+        {
+            var directory = Path.GetDirectoryName(fileName);
+            if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+                Directory.CreateDirectory(directory);
+
+            File.WriteAllText(fileName, output);
+        }
+        catch { }
     }
 }

@@ -327,7 +327,7 @@ class Program
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
 
-            File.WriteAllText(fileName, output);
+            File.WriteAllText(fileName, output + Environment.NewLine);
         }
         catch { }
     }

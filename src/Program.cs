@@ -8,7 +8,7 @@ using System.Text;
 
 class Program
 {
-    private static readonly string[] BuiltinCommands = ["echo", "exit", "type"];
+    private static readonly string[] BuiltinCommands = ["echo", "exit", "type", "pwd"];
     private static readonly string[] WindowsExtensions =
         [".exe", ".bat", ".cmd", ".com", ".ps1", ".msi"];
 

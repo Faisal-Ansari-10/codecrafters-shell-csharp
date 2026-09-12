@@ -29,7 +29,31 @@ class Program
     {
         if (command.StartsWith("echo "))
         {
-            Console.WriteLine(command[5..]);
+            StringBuilder argBuilder = new();
+            string args = command[5..];
+            StringBuilder output = new();
+
+            for(int i = 0; i < args.Length;)
+            {
+                if(args[i] == '\'')
+                {
+                    while(++i < args.Length && args[i] != '\'')
+                    {
+                        output.Append(args[i]);
+                    }
+                } else if(args[i] == ' ')
+                {
+                    output.Append(' ');
+                    while(++i < args.Length && args[i] == ' ');
+                } else
+                {
+                    while(i < args.Length && (args[i] != ' ' || args[i] != '\''))
+                    {
+                        output.Append(args[i++]);
+                    }
+                }
+            }
+            Console.WriteLine(output.ToString().Trim());
         }
         else if (command.StartsWith("type "))
         {
@@ -122,7 +146,7 @@ class Program
         {
             directory = Environment.GetEnvironmentVariable("HOME") ?? directory;
         }
-        
+
         if (!Directory.Exists(directory))
         {
             Console.WriteLine($"cd: {directory}: No such file or directory");

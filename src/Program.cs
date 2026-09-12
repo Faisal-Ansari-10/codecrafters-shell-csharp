@@ -57,7 +57,7 @@ class Program
 
             if (output.Length > 0)
                 PrintOutput(output, fileName);
-            if (error is not null)
+            if (!string.IsNullOrEmpty(error))
                 Console.Write(error);
         }
     }

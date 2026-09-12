@@ -8,7 +8,7 @@ using System.Text;
 
 class Program
 {
-    private static readonly string[] BuiltinCommands = ["echo", "exit", "type", "pwd"];
+    private static readonly string[] BuiltinCommands = ["echo", "exit", "type", "pwd", "cd"];
     private static readonly string[] WindowsExtensions =
         [".exe", ".bat", ".cmd", ".com", ".ps1", ".msi"];
 
@@ -34,9 +34,13 @@ class Program
         else if (command.StartsWith("type "))
         {
             HandleType(command[5..]);
-        } else if(command == "pwd")
+        }
+        else if (command == "pwd")
         {
             Console.WriteLine(Directory.GetCurrentDirectory());
+        } else if(command.StartsWith("cd "))
+        {
+            ChangeDirectory(command[3..]);
         }
         else
         {
@@ -109,6 +113,20 @@ class Program
 
         if (error.Length > 0)
             Console.Write(error.ToString());
+    }
+
+    private static void ChangeDirectory(string directory)
+    {
+        if (!Directory.Exists(directory))
+        {
+            Console.WriteLine($"cd: {directory}: No such file or directory");
+            return;
+        }
+        try
+        {
+            Directory.SetCurrentDirectory(directory);
+        }
+        catch { }
     }
 
     private static List<string> ParseCommandStrings(string command)

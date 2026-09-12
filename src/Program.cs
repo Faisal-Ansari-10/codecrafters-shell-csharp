@@ -38,7 +38,8 @@ class Program
         else if (command == "pwd")
         {
             Console.WriteLine(Directory.GetCurrentDirectory());
-        } else if(command.StartsWith("cd "))
+        }
+        else if (command.StartsWith("cd "))
         {
             ChangeDirectory(command[3..]);
         }
@@ -117,6 +118,11 @@ class Program
 
     private static void ChangeDirectory(string directory)
     {
+        if (directory == "~")
+        {
+            directory = Environment.GetEnvironmentVariable("HOME") ?? directory;
+        }
+        
         if (!Directory.Exists(directory))
         {
             Console.WriteLine($"cd: {directory}: No such file or directory");

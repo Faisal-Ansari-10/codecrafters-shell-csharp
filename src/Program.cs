@@ -41,12 +41,14 @@ class Program
                     {
                         output.Append(args[i]);
                     }
+                    i++;
                 } else if (args[i] == '"')
                 {
                     while(++i < args.Length && args[i] != '"')
                     {
                         output.Append(args[i]);
                     }
+                    i++;
                 } else if(args[i] == ' ')
                 {
                     output.Append(' ');

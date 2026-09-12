@@ -55,7 +55,8 @@ class Program
             var (cleanedCommand, fileName) = ExtractOutputRedirect(command);
             var (output, error) = ExecuteExternalCommand(cleanedCommand);
 
-            PrintOutput(output, fileName);
+            if (output.Length > 0)
+                PrintOutput(output, fileName);
             if (error is not null)
                 Console.Write(error);
         }

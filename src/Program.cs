@@ -165,6 +165,8 @@ class Program
         process.WaitForExit();
 
         var output = outputBuilder.ToString();
+        if(output.EndsWith(Environment.NewLine))
+        output = output[..^Environment.NewLine.Length];
         var error = errorBuilder.Length > 0 ? errorBuilder.ToString() : null;
 
 

@@ -29,7 +29,6 @@ class Program
     {
         if (command.StartsWith("echo "))
         {
-            StringBuilder argBuilder = new();
             string args = command[5..];
             StringBuilder output = new();
 

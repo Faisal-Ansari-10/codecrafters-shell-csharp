@@ -34,6 +34,9 @@ class Program
         else if (command.StartsWith("type "))
         {
             HandleType(command[5..]);
+        } else if(command == "pwd")
+        {
+            Console.WriteLine(Directory.GetCurrentDirectory());
         }
         else
         {

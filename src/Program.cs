@@ -48,13 +48,16 @@ class Program
                         output.Append(args[i]);
                     }
                     i++;
+                } else if(args[i] == '\\')
+                {
+                    if(++i < args.Length) output.Append(args[i++]);
                 } else if(args[i] == ' ')
                 {
                     output.Append(' ');
                     while(++i < args.Length && args[i] == ' ');
                 } else
                 {
-                    while(i < args.Length && !(args[i] == ' ' || args[i] == '\'' || args[i] == '"'))
+                    while(i < args.Length && !(args[i] == ' ' || args[i] == '\'' || args[i] == '"' || args[i] == '\\'))
                     {
                         output.Append(args[i++]);
                     }

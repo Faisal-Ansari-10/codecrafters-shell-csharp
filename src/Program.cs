@@ -47,7 +47,7 @@ class Program
                     while(++i < args.Length && args[i] == ' ');
                 } else
                 {
-                    while(i < args.Length && (args[i] != ' ' || args[i] != '\''))
+                    while(i < args.Length && !(args[i] == ' ' || args[i] == '\''))
                     {
                         output.Append(args[i++]);
                     }

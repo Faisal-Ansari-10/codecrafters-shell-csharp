@@ -30,6 +30,7 @@ class Program
         if (command.StartsWith("echo "))
         {
             string args = command[5..];
+            Console.WriteLine(args);
             StringBuilder output = new();
 
             for(int i = 0; i < args.Length;)

@@ -29,22 +29,22 @@ class Program
     {
         if (command.StartsWith("echo "))
         {
-            var (cleanedCommand, fileName) = ExtractOutputRedirect(command[5..]);
+            var (cleanedCommand, outputFileName, errorFileName) = ExtractOutputRedirect(command[5..]);
             var output = HandleEcho(cleanedCommand);
-            PrintOutput(output, fileName);
+            PrintOutput(output, outputFileName);
         }
         else if (command.StartsWith("type "))
         {
-            var (cleanedCommand, fileName) = ExtractOutputRedirect(command[5..]);
+            var (cleanedCommand, outputFileName, errorFileName) = ExtractOutputRedirect(command[5..]);
             var output = HandleType(cleanedCommand);
-            PrintOutput(output, fileName);
+            PrintOutput(output, outputFileName);
 
         }
         else if (command == "pwd")
         {
-            var (_, fileName) = ExtractOutputRedirect(command[3..]);
+            var (_, outputFileName, errorFileName) = ExtractOutputRedirect(command[3..]);
             var output = Directory.GetCurrentDirectory();
-            PrintOutput(output, fileName);
+            PrintOutput(output, outputFileName);
         }
         else if (command.StartsWith("cd "))
         {
@@ -52,13 +52,13 @@ class Program
         }
         else
         {
-            var (cleanedCommand, fileName) = ExtractOutputRedirect(command);
+            var (cleanedCommand, outputFileName, errorFileName) = ExtractOutputRedirect(command);
             var (output, error) = ExecuteExternalCommand(cleanedCommand);
 
             if (output.Length > 0)
-                PrintOutput(output, fileName);
+                PrintOutput(output, outputFileName);
             if (!string.IsNullOrEmpty(error))
-                Console.WriteLine(error);
+                PrintError(error, errorFileName);
         }
     }
 
@@ -310,26 +310,48 @@ class Program
         }
     }
 
-    private static (string command, string? fileName) ExtractOutputRedirect(string command)
+    private static (string command, string? outputFileName, string? errorFileName) ExtractOutputRedirect(string command)
     {
+        string cleaned = command;
+        string? outputFileName = null;
+        string? errorFileName = null;
         var idx = command.IndexOf("1> ", StringComparison.Ordinal);
-        if (idx < 0)
+        if(idx > 0)
         {
-            idx = command.IndexOf("> ", StringComparison.OrdinalIgnoreCase);
-            if (idx < 0)
-                return (command, null);
+            cleaned = command[..idx].TrimEnd();
+            outputFileName = command[(idx + 2)..].Trim();
+            
+        } else if((idx = command.IndexOf("2> ", StringComparison.OrdinalIgnoreCase)) > 0)
+        {
+            cleaned = command[..idx].TrimEnd();
+            errorFileName = command[(idx + 2)..].Trim();
+
+        }
+         else if((idx = command.IndexOf("> ", StringComparison.OrdinalIgnoreCase)) > 0)
+        {
+            cleaned = command[..idx].TrimEnd();
+            outputFileName = command[(idx + 2)..].Trim();
+
         }
 
-        var cleaned = command[..idx].TrimEnd();
-        var fileName = command[(idx + 2)..].Trim();
 
-        return (cleaned, string.IsNullOrEmpty(fileName) ? null : fileName);
+        return (cleaned, outputFileName, errorFileName);
     }
     private static void PrintOutput(string output, string? fileName = null)
     {
+        Print(output, fileName);
+    }
+
+    private static void PrintError(string error, string? fileName = null)
+    {
+        Print(error, fileName);
+    }
+
+    private static void Print(string text, string? fileName = null)
+    {
         if (string.IsNullOrEmpty(fileName))
         {
-            Console.WriteLine(output);
+            Console.WriteLine(text);
             return;
         }
 
@@ -339,7 +361,7 @@ class Program
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
 
-            File.WriteAllText(fileName, output + Environment.NewLine);
+            File.WriteAllText(fileName, text + Environment.NewLine);
         }
         catch { }
     }

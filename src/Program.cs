@@ -53,7 +53,6 @@ class Program
         else
         {
             var (cleanedCommand, fileName) = ExtractOutputRedirect(command);
-            Console.WriteLine(cleanedCommand);
             var (output, error) = ExecuteExternalCommand(cleanedCommand);
 
             if (output.Length > 0)

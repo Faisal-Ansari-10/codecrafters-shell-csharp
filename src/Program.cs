@@ -36,7 +36,7 @@ class Program
         else if (command.StartsWith("type "))
         {
             var (cleanedCommand, fileName) = ExtractOutputRedirect(command[5..]);
-            var output = HandleType(cleanedCommand[5..]);
+            var output = HandleType(cleanedCommand);
             PrintOutput(output, fileName);
 
         }
@@ -53,6 +53,7 @@ class Program
         else
         {
             var (cleanedCommand, fileName) = ExtractOutputRedirect(command);
+            Console.WriteLine(cleanedCommand);
             var (output, error) = ExecuteExternalCommand(cleanedCommand);
 
             if (output.Length > 0)

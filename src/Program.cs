@@ -175,9 +175,8 @@ class Program
         if (output.EndsWith(Environment.NewLine))
             output = output[..^Environment.NewLine.Length];
         var error = errorBuilder.Length > 0 ? errorBuilder.ToString() : null;
-
-
-
+        if(!string.IsNullOrEmpty(error) && error.EndsWith(Environment.NewLine))
+            error = error[..^Environment.NewLine.Length];
         return (output, error);
     }
     private static void ChangeDirectory(string directory)

@@ -120,7 +120,7 @@ class Program
         if (BuiltinCommands.Contains(argCommand))
         {
             output = $"{argCommand} is a shell builtin";
-
+            return output;
         }
 
         var executablePath = FindExecutable(argCommand);

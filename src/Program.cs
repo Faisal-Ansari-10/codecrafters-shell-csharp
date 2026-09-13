@@ -31,12 +31,17 @@ class Program
         {
             var (cleanedCommand, outputFileName, errorFileName) = ExtractOutputRedirect(command[5..]);
             var output = HandleEcho(cleanedCommand);
+            CreateFile(outputFileName);
+            CreateFile(errorFileName);
             PrintOutput(output, outputFileName);
         }
         else if (command.StartsWith("type "))
         {
             var (cleanedCommand, outputFileName, errorFileName) = ExtractOutputRedirect(command[5..]);
             var output = HandleType(cleanedCommand);
+            CreateFile(outputFileName);
+            CreateFile(errorFileName);
+
             PrintOutput(output, outputFileName);
 
         }
@@ -44,6 +49,9 @@ class Program
         {
             var (_, outputFileName, errorFileName) = ExtractOutputRedirect(command[3..]);
             var output = Directory.GetCurrentDirectory();
+            CreateFile(outputFileName);
+            CreateFile(errorFileName);
+
             PrintOutput(output, outputFileName);
         }
         else if (command.StartsWith("cd "))
@@ -54,6 +62,9 @@ class Program
         {
             var (cleanedCommand, outputFileName, errorFileName) = ExtractOutputRedirect(command);
             var (output, error) = ExecuteExternalCommand(cleanedCommand);
+
+            CreateFile(outputFileName);
+            CreateFile(errorFileName);
 
             if (output.Length > 0)
                 PrintOutput(output, outputFileName);
@@ -175,7 +186,7 @@ class Program
         if (output.EndsWith(Environment.NewLine))
             output = output[..^Environment.NewLine.Length];
         var error = errorBuilder.Length > 0 ? errorBuilder.ToString() : null;
-        if(!string.IsNullOrEmpty(error) && error.EndsWith(Environment.NewLine))
+        if (!string.IsNullOrEmpty(error) && error.EndsWith(Environment.NewLine))
             error = error[..^Environment.NewLine.Length];
         return (output, error);
     }
@@ -316,18 +327,19 @@ class Program
         string? outputFileName = null;
         string? errorFileName = null;
         var idx = command.IndexOf("1> ", StringComparison.Ordinal);
-        if(idx > 0)
+        if (idx > 0)
         {
             cleaned = command[..idx].TrimEnd();
             outputFileName = command[(idx + 2)..].Trim();
-            
-        } else if((idx = command.IndexOf("2> ", StringComparison.OrdinalIgnoreCase)) > 0)
+
+        }
+        else if ((idx = command.IndexOf("2> ", StringComparison.OrdinalIgnoreCase)) > 0)
         {
             cleaned = command[..idx].TrimEnd();
             errorFileName = command[(idx + 2)..].Trim();
 
         }
-         else if((idx = command.IndexOf("> ", StringComparison.OrdinalIgnoreCase)) > 0)
+        else if ((idx = command.IndexOf("> ", StringComparison.OrdinalIgnoreCase)) > 0)
         {
             cleaned = command[..idx].TrimEnd();
             outputFileName = command[(idx + 2)..].Trim();
@@ -355,13 +367,19 @@ class Program
             return;
         }
 
+        File.WriteAllText(fileName, text + Environment.NewLine);
+    }
+
+    private static void CreateFile(string? fileName)
+    {
+        if (string.IsNullOrEmpty(fileName)) return;
         try
         {
             var directory = Path.GetDirectoryName(fileName);
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                 Directory.CreateDirectory(directory);
 
-            File.WriteAllText(fileName, text + Environment.NewLine);
+            File.WriteAllText(fileName, "");
         }
         catch { }
     }

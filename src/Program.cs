@@ -42,7 +42,7 @@ class Program
         }
         else if (command == "pwd")
         {
-            var (_, fileName) = ExtractOutputRedirect(command[5..]);
+            var (_, fileName) = ExtractOutputRedirect(command[3..]);
             var output = Directory.GetCurrentDirectory();
             PrintOutput(output, fileName);
         }
@@ -58,7 +58,7 @@ class Program
             if (output.Length > 0)
                 PrintOutput(output, fileName);
             if (!string.IsNullOrEmpty(error))
-                Console.Write(error);
+                Console.WriteLine(error);
         }
     }
 
@@ -96,9 +96,16 @@ class Program
             }
             else
             {
-                while (i < args.Length && !(args[i] == ' ' || args[i] == '\'' || args[i] == '"' || args[i] == '\\'))
+
+                while (i < args.Length && !(new[] { ' ', '\'', '"', '\\', '1' }.Contains(args[i])))
                 {
                     output.Append(args[i++]);
+                }
+
+                if (i < args.Length && args[i] == '1')
+                {
+                    if (i + 1 < args.Length && args[i + 1] == '>') i += 2;
+                    else output.Append(args[i++]);
                 }
             }
         }
@@ -165,8 +172,8 @@ class Program
         process.WaitForExit();
 
         var output = outputBuilder.ToString();
-        if(output.EndsWith(Environment.NewLine))
-        output = output[..^Environment.NewLine.Length];
+        if (output.EndsWith(Environment.NewLine))
+            output = output[..^Environment.NewLine.Length];
         var error = errorBuilder.Length > 0 ? errorBuilder.ToString() : null;
 
 
@@ -306,9 +313,13 @@ class Program
 
     private static (string command, string? fileName) ExtractOutputRedirect(string command)
     {
-        var idx = command.IndexOf("> ", StringComparison.Ordinal);
+        var idx = command.IndexOf("1> ", StringComparison.Ordinal);
         if (idx < 0)
-            return (command, null);
+        {
+            idx = command.IndexOf("> ", StringComparison.OrdinalIgnoreCase);
+            if (idx < 0)
+                return (command, null);
+        }
 
         var cleaned = command[..idx].TrimEnd();
         var fileName = command[(idx + 2)..].Trim();

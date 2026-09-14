@@ -153,19 +153,19 @@ class CommandHandler(Lexer lexer)
     if (!OperatingSystem.IsWindows() && !Utils.IsExecutable(exePath))
       return new(output: $"{command}: no execute permission");
 
+    var exeName = OperatingSystem.IsWindows()
+                    ? exePath
+                    : Path.GetFileName(exePath);
     var startInfo = new ProcessStartInfo
     {
-      FileName = exePath,
+      FileName = exeName,
       RedirectStandardOutput = true,
       RedirectStandardError = true,
       UseShellExecute = false,
       CreateNoWindow = true
     };
 
-    for (int i = 0; i < args.Count; i++)
-    {
-      startInfo.ArgumentList.Add(args[i]);
-    }
+    foreach (var a in args) startInfo.ArgumentList.Add(a);
 
     using var process = new Process { StartInfo = startInfo };
 

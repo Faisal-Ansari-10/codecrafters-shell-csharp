@@ -79,7 +79,16 @@ class CommandHandler(Lexer lexer)
 
       if (redirectTarget is null) return;
       var content = isStdError ? result.Error : result.Output;
-      Utils.WriteToFile(redirectTarget, content.TrimEnd('\n', '\r'), isAppend);
+      Utils.WriteToFile(redirectTarget, content, isAppend);
+
+      if (isStdError)
+      {
+        if (!string.IsNullOrEmpty(result.Output)) Console.WriteLine(result.Output.TrimEnd('\n'));
+      }
+      else
+      {
+        if (!string.IsNullOrEmpty(result.Error)) Console.Error.WriteLine(result.Error.TrimEnd('\n'));
+      }
     }
     else
     {

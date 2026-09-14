@@ -42,6 +42,9 @@ class Lexer
         else if (inSingleQuotes)
         {
           currentToken.Append(c);
+        } else
+        {
+          inDoubleQuotes = true;
         }
       }
       else if (c == '\\')

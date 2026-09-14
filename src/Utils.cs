@@ -80,7 +80,7 @@ static class Utils
       var directory = GetDirectory(path);
       if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) Directory.CreateDirectory(directory);
 
-      if (!content.EndsWith('\n')) content += "\n";
+      if (!string.IsNullOrEmpty(content) && !content.EndsWith('\n')) content += "\n";
       if (append) File.AppendAllText(path, content);
       else File.WriteAllText(path, content);
     }

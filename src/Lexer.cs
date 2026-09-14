@@ -95,6 +95,7 @@ class Lexer
       else
       {
         currentToken.Append(c);
+        escapeChar = false;
       }
     }
 

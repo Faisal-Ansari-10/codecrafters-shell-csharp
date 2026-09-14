@@ -21,27 +21,44 @@ class Lexer
 
       if (c == '\'')
       {
-        if (inSingleQuotes) { inSingleQuotes = false; }
-        else if (inDoubleQuotes) { currentToken.Append(c); }
-        else { inSingleQuotes = true; }
-      }
-      else if (c == '"')
-      {
-        if(inSingleQuotes)
+        if (inSingleQuotes)
         {
-          currentToken.Append(c);
-        } else if(escapeChar)
+          inSingleQuotes = false;
+        }
+        else if (escapeChar)
         {
           currentToken.Append(c);
           escapeChar = false;
-        } else if(inDoubleQuotes)
+        }
+        else if (inDoubleQuotes)
+        {
+          currentToken.Append(c);
+        }
+        else
+        {
+          inSingleQuotes = true;
+        }
+      }
+      else if (c == '"')
+      {
+        if (inSingleQuotes)
+        {
+          currentToken.Append(c);
+        }
+        else if (escapeChar)
+        {
+          currentToken.Append(c);
+          escapeChar = false;
+        }
+        else if (inDoubleQuotes)
         {
           inDoubleQuotes = false;
-        } else
+        }
+        else
         {
           inDoubleQuotes = true;
         }
-    
+
       }
       else if (c == '\\')
       {
@@ -49,15 +66,16 @@ class Lexer
         {
           currentToken.Append(c);
         }
-        else if(escapeChar)
+        else if (escapeChar)
         {
           currentToken.Append(c);
           escapeChar = false;
-        } else
+        }
+        else
         {
           escapeChar = true;
         }
-        
+
       }
       else if (c == ' ')
       {

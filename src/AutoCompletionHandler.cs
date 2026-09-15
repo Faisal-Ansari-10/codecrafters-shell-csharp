@@ -14,6 +14,11 @@ class AutoCompletionHandler : IAutoCompleteHandler
         return ["exit "];
       else if (text.StartsWith('e'))
         return ["echo ", "exit "];
+      else
+      {
+        Console.Write('\a');
+        return [];
+      }
     }
 
     return [];

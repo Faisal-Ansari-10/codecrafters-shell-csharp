@@ -15,7 +15,7 @@ class CommandHandler
   private string? _input = null;
   private readonly Lexer _lexer;
   public string? Input => _input;
-  private readonly string[] _builtIns = ["echo", "exit", "type", "pwd", "cd"];
+  public static readonly string[] BuiltIns = ["echo", "exit", "type", "pwd", "cd"];
   private readonly string[] _redirectOperators = [">", "1>", "2>", ">>", "1>>", "2>>"];
 
   public CommandHandler(Lexer lexer)
@@ -113,14 +113,14 @@ class CommandHandler
 
   private CommandResult HandleTypeCommand(string command)
   {
-    if (_builtIns.Contains(command))
+    if (BuiltIns.Contains(command))
     {
       return new(output: $"{command} is a shell builtin");
     }
     else
     {
       var exePath = Utils.FindExecutable(command);
-      if (exePath is not null && (OperatingSystem.IsWindows() || Utils.IsExecutable(exePath)))
+      if (exePath is not null && (OperatingSystem.IsWindows() || Utils.IsExecutable(exePath[0])))
         return new(output: $"{command} is {exePath}");
     }
 
@@ -155,15 +155,15 @@ class CommandHandler
   private static CommandResult HandleExecuteCommand(string command, List<string> args)
   {
     var exePath = Utils.FindExecutable(command);
-    if (exePath is null)
+    if (exePath.Length == 0)
       return new(output: $"{command}: not found");
 
-    if (!OperatingSystem.IsWindows() && !Utils.IsExecutable(exePath))
+    if (!OperatingSystem.IsWindows() && !Utils.IsExecutable(exePath[0]))
       return new(output: $"{command}: no execute permission");
 
     var exeName = OperatingSystem.IsWindows()
-                    ? exePath
-                    : Path.GetFileName(exePath);
+                    ? exePath[0]
+                    : Path.GetFileName(exePath[0]);
     var startInfo = new ProcessStartInfo
     {
       FileName = exeName,

@@ -28,11 +28,11 @@ static class Utils
     }
   }
 
-  public static string? FindExecutable(string command)
+  public static string[] FindExecutable(string command)
   {
     var pathVariable = Environment.GetEnvironmentVariable("PATH");
     if (string.IsNullOrEmpty(pathVariable))
-      return null;
+      return [];
 
     var extensions = OperatingSystem.IsWindows() ? WindowsExtensions : [""];
     var directories = pathVariable.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
@@ -50,11 +50,42 @@ static class Utils
           continue;
 
         if (OperatingSystem.IsWindows() || IsExecutable(filePath))
-          return filePath;
+          return [filePath];
       }
     }
 
-    return null;
+    return [];
+  }
+
+  public static string[] FindExecutables(string prefix)
+  {
+    var pathVariable = Environment.GetEnvironmentVariable("PATH");
+    if (string.IsNullOrEmpty(pathVariable))
+      return [];
+
+    var extensions = OperatingSystem.IsWindows() ? WindowsExtensions : [""];
+    var directories = pathVariable.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries);
+
+    var results = new List<string>();
+
+    foreach (var directory in directories)
+    {
+      if (!Directory.Exists(directory))
+        continue;
+
+      var matches = Directory.GetFiles(directory)
+          .Select(Path.GetFileName)
+          .Where(fileName => fileName is not null &&
+              extensions.Any(ext =>
+                  fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase) &&
+                  fileName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)))
+          .Where(fileName => OperatingSystem.IsWindows() || IsExecutable(Path.Combine(directory, fileName!)))
+          .Select(fileName => Path.GetFileNameWithoutExtension(fileName)!);
+
+      results.AddRange(matches!);
+    }
+
+    return [.. results.Distinct(StringComparer.OrdinalIgnoreCase)];
   }
 
   [UnsupportedOSPlatform("windows")]

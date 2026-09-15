@@ -6,21 +6,22 @@ class AutoCompletionHandler : IAutoCompleteHandler
 
   public string[] GetSuggestions(string text, int index)
   {
-    if (index == 0)
-    {
-      if (text.StartsWith("echo") || text.StartsWith("ech") || text.StartsWith("ec"))
-        return ["echo "];
-      else if (text.StartsWith("exit") || text.StartsWith("exi") || text.StartsWith("ex"))
-        return ["exit "];
-      else if (text.StartsWith('e'))
-        return ["echo ", "exit "];
-      else
-      {
-        Console.Write('\a');
-        return [];
-      }
-    }
+    if (index != 0 || string.IsNullOrEmpty(text))
+      return [];
 
+    var builtInMatches = CommandHandler.BuiltIns
+        .Where(b => b.StartsWith(text, StringComparison.OrdinalIgnoreCase))
+        .Select(b => b + " ")
+        .ToArray();
+
+    var executableMatches = Utils.FindExecutables(text)
+    .Select(exe => exe + " ")
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToArray();
+
+    if (builtInMatches.Length > 0 || executableMatches.Length > 0) return [.. builtInMatches, .. executableMatches];
+
+    Console.Write('\a');
     return [];
   }
 }

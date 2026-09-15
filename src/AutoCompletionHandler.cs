@@ -9,11 +9,11 @@ class AutoCompletionHandler : IAutoCompleteHandler
     if (index == 0)
     {
       if (text.StartsWith("echo") || text.StartsWith("ech") || text.StartsWith("ec"))
-        return ["echo"];
+        return ["echo "];
       else if (text.StartsWith("exit") || text.StartsWith("exi") || text.StartsWith("ex"))
-        return ["exit"];
+        return ["exit "];
       else if (text.StartsWith('e'))
-        return ["echo", "exit"];
+        return ["echo ", "exit "];
     }
 
     return [];

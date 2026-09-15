@@ -121,7 +121,7 @@ class CommandHandler
     {
       var exePath = Utils.FindExecutable(command);
       if (exePath is not null && (OperatingSystem.IsWindows() || Utils.IsExecutable(exePath[0])))
-        return new(output: $"{command} is {exePath}");
+        return new(output: $"{command} is {exePath[0]}");
     }
 
     return new(output: $"{command}: not found");

@@ -2,26 +2,61 @@ using ReadLine;
 
 class AutoCompletionHandler : IAutoCompleteHandler
 {
-  public char[] Separators { get; set; } = [' ',];
+    public char[] Separators { get; set; } = [' ',];
 
-  public string[] GetSuggestions(string text, int index)
-  {
-    if (index != 0 || string.IsNullOrEmpty(text))
-      return [];
+    private int _tabCount = 0;
+    private string _lastText = "";
 
-    var builtInMatches = CommandHandler.BuiltIns
-        .Where(b => b.StartsWith(text, StringComparison.OrdinalIgnoreCase))
-        .Select(b => b + " ")
-        .ToArray();
+    public string[] GetSuggestions(string text, int index)
+    {
+        if (index != 0 || string.IsNullOrEmpty(text))
+        {
+            _lastText = text;
+            _tabCount = 0;
+            return [];
+        }
 
-    var executableMatches = Utils.FindExecutables(text)
-    .Select(exe => exe + " ")
-    .Distinct(StringComparer.OrdinalIgnoreCase)
-    .ToArray();
+        if (_lastText == text)
+            _tabCount++;
+        else
+            _tabCount = 1;
 
-    if (builtInMatches.Length > 0 || executableMatches.Length > 0) return [.. builtInMatches, .. executableMatches];
+        _lastText = text;
 
-    Console.Write('\a');
-    return [];
-  }
+        var builtInMatches = CommandHandler.BuiltIns
+            .Where(b => b.StartsWith(text, StringComparison.OrdinalIgnoreCase));
+
+        var executableMatches = Utils.FindExecutables(text);
+
+        var allMatches = builtInMatches
+            .Concat(executableMatches)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .OrderBy(m => m, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
+        if (allMatches.Length == 0)
+        {
+            Console.Write('\a');
+            return [];
+        }
+
+        if (allMatches.Length == 1)
+        {
+            _tabCount = 0;
+            return [allMatches[0] + " "];
+        }
+
+        if (_tabCount == 1)
+        {
+            Console.Write('\a');
+            return [];
+        }
+
+        Console.WriteLine();
+        Console.WriteLine(string.Join("  ", allMatches));
+        Console.Write($"$ {text}");
+
+        _tabCount = 0;
+        return [];
+    }
 }

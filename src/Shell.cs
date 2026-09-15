@@ -12,7 +12,7 @@ class Shell
   {
     while (true)
     {
-      Console.Write("$ ");
+      // Console.Write("$ ");
       _commandHandler.Read();
 
       if (_commandHandler.Input is null) break;

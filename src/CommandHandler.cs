@@ -1,8 +1,10 @@
 using System.Diagnostics;
 using System.Text;
 using Microsoft.VisualBasic;
+using RL = ReadLine.ReadLine;
 
-class CommandHandler(Lexer lexer)
+
+class CommandHandler
 {
   private readonly struct CommandResult(string output = "", string error = "")
   {
@@ -11,14 +13,20 @@ class CommandHandler(Lexer lexer)
   }
 
   private string? _input = null;
-  private readonly Lexer _lexer = lexer;
+  private readonly Lexer _lexer;
   public string? Input => _input;
   private readonly string[] _builtIns = ["echo", "exit", "type", "pwd", "cd"];
   private readonly string[] _redirectOperators = [">", "1>", "2>", ">>", "1>>", "2>>"];
 
+  public CommandHandler(Lexer lexer)
+  {
+    _lexer = lexer;
+    RL.Context.AutoCompletionHandler = new AutoCompletionHandler();
+
+  }
   public void Read()
   {
-    _input = Console.ReadLine();
+    _input = RL.Read("$ ");
   }
 
   public void Execute()

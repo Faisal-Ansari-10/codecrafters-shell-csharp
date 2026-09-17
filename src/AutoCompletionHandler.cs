@@ -76,18 +76,32 @@ class AutoCompletionHandler : IAutoCompleteHandler
 
     private static string[] GetFileNameSuggestions(string text, int index)
     {
-        if (index == 0) return [];
+        if (index == 0 || string.IsNullOrEmpty(text)) return [];
 
-        var currentDirectory = Directory.GetCurrentDirectory();
-        if (string.IsNullOrEmpty(currentDirectory)) return [];
+        var pathPrefix = text[index..];
+        if (string.IsNullOrEmpty(pathPrefix)) return [];
 
-        var files = Directory.GetFiles(currentDirectory);
+        var directory = Path.GetDirectoryName(pathPrefix);
+        var searchDir = string.IsNullOrEmpty(directory)
+            ? Directory.GetCurrentDirectory()
+            : Path.GetFullPath(directory);
+
+        var files = Directory.GetFiles(searchDir);
         if (files is null || files.Length == 0) return [];
 
-        var filePrefix = text[index..];
-        files = [.. files.Select(f => Path.GetFileName(f)).Where(file => file.StartsWith(filePrefix)).Select(f => $"{f} ")];
-        return files;
+        var fileNamePrefix = Path.GetFileName(pathPrefix);
+        var matches = files
+        .Select(Path.GetFileName)
+        .Where(name => name!.StartsWith(fileNamePrefix, StringComparison.OrdinalIgnoreCase))
+        .Select(name => string.IsNullOrEmpty(directory)
+            ? $"{name} "
+            : $"{Path.Combine(directory, name!)} ")
+        .ToArray();
+
+        return matches;
     }
+
+
     private static string FindLCP(string[] strings)
     {
         if (strings.Length == 0) return "";

@@ -9,6 +9,12 @@ class AutoCompletionHandler : IAutoCompleteHandler
 
     public string[] GetSuggestions(string text, int index)
     {
+        if (index == 0) return GetCommandSuggestions(text, index);
+        return GetFileNameSuggestions(text, index);
+    }
+
+    private string[] GetCommandSuggestions(string text, int index)
+    {
         if (index != 0 || string.IsNullOrEmpty(text))
         {
             _lastText = text;
@@ -47,16 +53,16 @@ class AutoCompletionHandler : IAutoCompleteHandler
         }
 
         string lcp = FindLCP(allMatches);
-        if(lcp.Length > text.Length)
+        if (lcp.Length > text.Length)
         {
             _tabCount = 0;
             _lastText = lcp;
             return [lcp];
         }
-        
+
         if (_tabCount == 1)
         {
-            Console.Write('\a');            
+            Console.Write('\a');
             return [];
         }
 
@@ -68,18 +74,32 @@ class AutoCompletionHandler : IAutoCompleteHandler
         return [];
     }
 
+    private static string[] GetFileNameSuggestions(string text, int index)
+    {
+        if (index == 0) return [];
+
+        var currentDirectory = Directory.GetCurrentDirectory();
+        if (string.IsNullOrEmpty(currentDirectory)) return [];
+
+        var files = Directory.GetFiles(currentDirectory);
+        if (files is null || files.Length == 0) return [];
+
+        var filePrefix = text[index..];
+        files = [.. files.Where(file => file.StartsWith(filePrefix))];
+        return files;
+    }
     private static string FindLCP(string[] strings)
     {
-        if(strings.Length == 0) return "";
+        if (strings.Length == 0) return "";
 
         string prefix = strings[0];
-        foreach(var s in strings.Skip(1))
+        foreach (var s in strings.Skip(1))
         {
-           while(!s.StartsWith(prefix))
+            while (!s.StartsWith(prefix))
             {
                 prefix = prefix[..^1];
-                if(prefix.Length == 0) return "";
-            } 
+                if (prefix.Length == 0) return "";
+            }
         }
 
         return prefix;

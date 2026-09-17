@@ -85,7 +85,7 @@ class AutoCompletionHandler : IAutoCompleteHandler
         if (files is null || files.Length == 0) return [];
 
         var filePrefix = text[index..];
-        files = [.. files.Where(file => file.StartsWith(filePrefix))];
+        files = [.. files.Where(file => file.StartsWith(filePrefix)).Select(f => $"{f} ")];
         return files;
     }
     private static string FindLCP(string[] strings)

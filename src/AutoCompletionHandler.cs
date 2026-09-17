@@ -51,18 +51,8 @@ class AutoCompletionHandler : IAutoCompleteHandler
             Console.Write('\a');
             allMatches.Sort((a, b) => a.Length - b.Length);
             int prefixIndex = 0;
-            for(int i = 0; i < allMatches.Length; i++)
-            {
-                int j = i + 1;
-                for(; j < allMatches.Length; j++)
-                {
-                    if(!allMatches[j].StartsWith(allMatches[i])) break;
-                }
-
-                if(j < allMatches.Length) break;
-                prefixIndex = i;
-            }
-            return [allMatches[prefixIndex] + " "];
+            
+            return [allMatches[prefixIndex]];
         }
 
         Console.WriteLine();

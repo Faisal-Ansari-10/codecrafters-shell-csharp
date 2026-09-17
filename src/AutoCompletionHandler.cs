@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using ReadLine;
 
 class AutoCompletionHandler : IAutoCompleteHandler
@@ -86,17 +87,28 @@ class AutoCompletionHandler : IAutoCompleteHandler
             ? Directory.GetCurrentDirectory()
             : Path.GetFullPath(directory);
 
-        var files = Directory.GetFiles(searchDir);
-        if (files is null || files.Length == 0) return [];
-
+        var directories = Directory.GetDirectories(searchDir) ?? [];
         var fileNamePrefix = Path.GetFileName(pathPrefix);
-        var matches = files
+
+        string[] matches = [.. directories
+                    .Select(Path.GetFileName)
+                    .Where(name => name!.StartsWith(fileNamePrefix, StringComparison.OrdinalIgnoreCase))
+                    .Select(name => string.IsNullOrEmpty(directory)
+                        ? $"{name} "
+                        : $"{Path.Combine(directory, name!)}{Path.DirectorySeparatorChar}")];
+        
+        if (matches.Length > 0)
+        {
+            return matches;
+        }
+
+        var files = Directory.GetFiles(searchDir) ?? [];
+        matches = [.. files
         .Select(Path.GetFileName)
         .Where(name => name!.StartsWith(fileNamePrefix, StringComparison.OrdinalIgnoreCase))
         .Select(name => string.IsNullOrEmpty(directory)
             ? $"{name} "
-            : $"{Path.Combine(directory, name!)} ")
-        .ToArray();
+            : $"{Path.Combine(directory, name!)} ")];
 
         return matches;
     }

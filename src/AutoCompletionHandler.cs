@@ -80,7 +80,7 @@ class AutoCompletionHandler : IAutoCompleteHandler
         if (index == 0 || string.IsNullOrEmpty(text)) return [];
 
         var pathPrefix = text[index..];
-        if (string.IsNullOrEmpty(pathPrefix)) return [];
+        if (string.IsNullOrEmpty(pathPrefix)) pathPrefix = ".";
 
         var directory = Path.GetDirectoryName(pathPrefix);
         var searchDir = string.IsNullOrEmpty(directory)

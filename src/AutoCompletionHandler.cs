@@ -46,13 +46,18 @@ class AutoCompletionHandler : IAutoCompleteHandler
             return [allMatches[0] + " "];
         }
 
+        string lcp = FindLCP(allMatches);
+        if(lcp.Length > text.Length)
+        {
+            _tabCount = 0;
+            _lastText = lcp;
+            return [lcp];
+        }
+        
         if (_tabCount == 1)
         {
-            Console.Write('\a');
-            allMatches.Sort((a, b) => a.Length - b.Length);
-            int prefixIndex = 0;
-            
-            return [allMatches[prefixIndex]];
+            Console.Write('\a');            
+            return [];
         }
 
         Console.WriteLine();
@@ -61,5 +66,22 @@ class AutoCompletionHandler : IAutoCompleteHandler
 
         _tabCount = 0;
         return [];
+    }
+
+    private string FindLCP(string[] strings)
+    {
+        if(strings.Length == 0) return "";
+
+        string prefix = strings[0];
+        foreach(var s in strings.Skip(1))
+        {
+           while(!s.StartsWith(prefix))
+            {
+                prefix = prefix[..^1];
+                if(prefix.Length == 0) return "";
+            } 
+        }
+
+        return prefix;
     }
 }

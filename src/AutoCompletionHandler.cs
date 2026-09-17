@@ -68,7 +68,7 @@ class AutoCompletionHandler : IAutoCompleteHandler
         return [];
     }
 
-    private string FindLCP(string[] strings)
+    private static string FindLCP(string[] strings)
     {
         if(strings.Length == 0) return "";
 

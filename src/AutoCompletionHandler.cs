@@ -97,6 +97,7 @@ class AutoCompletionHandler : IAutoCompleteHandler
         if (!Directory.Exists(searchDir)) return [];
 
         var directories = Directory.GetDirectories(searchDir) ?? [];
+        Console.WriteLine(directories);
 
         string[] matches = [.. directories
                     .Select(Path.GetFileName)

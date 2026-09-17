@@ -80,23 +80,32 @@ class AutoCompletionHandler : IAutoCompleteHandler
         if (index == 0 || string.IsNullOrEmpty(text)) return [];
 
         var pathPrefix = text[index..];
-        if (string.IsNullOrEmpty(pathPrefix)) pathPrefix = ".";
 
-        var directory = Path.GetDirectoryName(pathPrefix);
+        string? directory = "";
+        string fileNamePrefix = "";
+
+        if (!string.IsNullOrEmpty(pathPrefix))
+        {
+            directory = Path.GetDirectoryName(pathPrefix);
+            fileNamePrefix = Path.GetFileName(pathPrefix);
+        }
+
         var searchDir = string.IsNullOrEmpty(directory)
             ? Directory.GetCurrentDirectory()
             : Path.GetFullPath(directory);
 
+        if (!Directory.Exists(searchDir)) return [];
+
         var directories = Directory.GetDirectories(searchDir) ?? [];
-        var fileNamePrefix = Path.GetFileName(pathPrefix);
 
         string[] matches = [.. directories
                     .Select(Path.GetFileName)
                     .Where(name => name!.StartsWith(fileNamePrefix, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
                     .Select(name => string.IsNullOrEmpty(directory)
-                        ? $"{name} "
+                        ? $"{name}{Path.DirectorySeparatorChar}"
                         : $"{Path.Combine(directory, name!)}{Path.DirectorySeparatorChar}")];
-        
+
         if (matches.Length > 0)
         {
             return matches;
@@ -106,6 +115,7 @@ class AutoCompletionHandler : IAutoCompleteHandler
         matches = [.. files
         .Select(Path.GetFileName)
         .Where(name => name!.StartsWith(fileNamePrefix, StringComparison.OrdinalIgnoreCase))
+        .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
         .Select(name => string.IsNullOrEmpty(directory)
             ? $"{name} "
             : $"{Path.Combine(directory, name!)} ")];

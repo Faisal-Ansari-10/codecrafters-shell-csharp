@@ -69,7 +69,6 @@ class Shell
     string current = command.ToString();
     int index = current.LastIndexOf(' ') + 1;
     string word = current[index..];
-    bool isCommand = index == 0;
 
     string[] matches = _autoCompletion.GetSuggestions(current, index);
     _tabCount++;
@@ -87,15 +86,12 @@ class Shell
       return;
     }
 
-    if (isCommand)
+    string lcp = FindLCP(matches);
+    if (lcp.Length > word.Length)
     {
-      string lcp = FindLCP(matches);
-      if (lcp.Length > word.Length)
-      {
-        ReplaceWord(command, index, lcp);
-        _tabCount = 0;
-        return;
-      }
+      ReplaceWord(command, index, lcp);
+      _tabCount = 0;   
+      return;
     }
 
     if (_tabCount == 1)

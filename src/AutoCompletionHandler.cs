@@ -117,6 +117,11 @@ class AutoCompletionHandler
             ? $"{name} "
             : $"{Path.Combine(directory, name!)} ")];
 
+        if (matches.Length == 0)
+        {
+            Console.Write('\a');
+
+        }
         return matches;
     }
 

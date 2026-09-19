@@ -1,145 +1,48 @@
 class AutoCompletionHandler
 {
-    public char[] Separators { get; set; } = [' ',];
+    private static readonly char[] PathSeparators = ['/', '\\'];
+    public string[] GetSuggestions(string text, int index) =>
+        index == 0 ? GetCommandSuggestions(text) : GetFileNameSuggestions(text, index);
 
-    private int _tabCount = 0;
-    private string _lastText = "";
-
-    public string[] GetSuggestions(string text, int index)
+    private static string[] GetCommandSuggestions(string text)
     {
-        if (index == 0) return GetCommandSuggestions(text, index);
-        return GetFileNameSuggestions(text, index);
-    }
-
-    private string[] GetCommandSuggestions(string text, int index)
-    {
-        if (index != 0 || string.IsNullOrEmpty(text))
-        {
-            _lastText = text;
-            _tabCount = 0;
-            return [];
-        }
-
-        if (_lastText == text)
-            _tabCount++;
-        else
-            _tabCount = 1;
-
-        _lastText = text;
+        if (text.Length == 0) return [];
 
         var builtInMatches = CommandHandler.BuiltIns
             .Where(b => b.StartsWith(text, StringComparison.OrdinalIgnoreCase));
 
-        var executableMatches = Utils.FindExecutables(text);
-
-        var allMatches = builtInMatches
-            .Concat(executableMatches)
+        return [.. builtInMatches
+            .Concat(Utils.FindExecutables(text))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .OrderBy(m => m, StringComparer.OrdinalIgnoreCase)
-            .ToArray();
-
-        if (allMatches.Length == 0)
-        {
-            Console.Write('\a');
-            return [];
-        }
-
-        if (allMatches.Length == 1)
-        {
-            _tabCount = 0;
-            return [allMatches[0] + " "];
-        }
-
-        string lcp = FindLCP(allMatches);
-        if (lcp.Length > text.Length)
-        {
-            _tabCount = 0;
-            _lastText = lcp;
-            return [lcp];
-        }
-
-        if (_tabCount == 1)
-        {
-            Console.Write('\a');
-            return [];
-        }
-
-        Console.WriteLine();
-        Console.WriteLine(string.Join("  ", allMatches));
-        Console.Write($"$ {text}");
-
-        _tabCount = 0;
-        return [];
+            .Select(m => m + " ")];
     }
 
     private static string[] GetFileNameSuggestions(string text, int index)
     {
-        if (index == 0 || string.IsNullOrEmpty(text)) return [];
+        string pathPrefix = text[index..];
 
-        var pathPrefix = text[index..];
+        int slash = pathPrefix.LastIndexOfAny(PathSeparators);
+        string directory = slash >= 0 ? pathPrefix[..(slash + 1)] : "";
+        string namePrefix = pathPrefix[(slash + 1)..];
 
-        string? directory = "";
-        string fileNamePrefix = "";
-
-        if (!string.IsNullOrEmpty(pathPrefix))
-        {
-            directory = Path.GetDirectoryName(pathPrefix);
-            fileNamePrefix = Path.GetFileName(pathPrefix);
-        }
-
-        var searchDir = string.IsNullOrEmpty(directory)
+        string searchDir = directory.Length == 0
             ? Directory.GetCurrentDirectory()
             : Path.GetFullPath(directory);
 
         if (!Directory.Exists(searchDir)) return [];
 
-        var directories = Directory.GetDirectories(searchDir) ?? [];
-
-        string[] matches = [.. directories
-                    .Select(Path.GetFileName)
-                    .Where(name => name!.StartsWith(fileNamePrefix, StringComparison.OrdinalIgnoreCase))
-                    .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
-                    .Select(name => string.IsNullOrEmpty(directory)
-                        ? $"{name}{Path.DirectorySeparatorChar}"
-                        : $"{Path.Combine(directory, name!)}{Path.DirectorySeparatorChar}")];
-
-        if (matches.Length > 0)
+        try
         {
-            return matches;
+            return [.. Directory.EnumerateFileSystemEntries(searchDir)
+                .Select(path => (Name: Path.GetFileName(path), IsDir: Directory.Exists(path)))
+                .Where(e => e.Name.StartsWith(namePrefix, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(e => e.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(e => directory + e.Name + (e.IsDir ? Path.DirectorySeparatorChar : ' '))];
         }
-
-        var files = Directory.GetFiles(searchDir) ?? [];
-        matches = [.. files
-        .Select(Path.GetFileName)
-        .Where(name => name!.StartsWith(fileNamePrefix, StringComparison.OrdinalIgnoreCase))
-        .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
-        .Select(name => string.IsNullOrEmpty(directory)
-            ? $"{name} "
-            : $"{Path.Combine(directory, name!)} ")];
-
-        if (matches.Length == 0)
+        catch (UnauthorizedAccessException)
         {
-            Console.Write('\a');
-
+            return [];
         }
-        return matches;
-    }
-
-
-    private static string FindLCP(string[] strings)
-    {
-        if (strings.Length == 0) return "";
-
-        string prefix = strings[0];
-        foreach (var s in strings.Skip(1))
-        {
-            while (!s.StartsWith(prefix))
-            {
-                prefix = prefix[..^1];
-                if (prefix.Length == 0) return "";
-            }
-        }
-
-        return prefix;
     }
 }

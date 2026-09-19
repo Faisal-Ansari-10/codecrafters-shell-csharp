@@ -12,27 +12,19 @@ class CommandHandler
     public readonly string Error = error;
   }
 
-  private string? _input = null;
   private readonly Lexer _lexer;
-  public string? Input => _input;
   public static readonly string[] BuiltIns = ["echo", "exit", "type", "pwd", "cd"];
   private readonly string[] _redirectOperators = [">", "1>", "2>", ">>", "1>>", "2>>"];
 
   public CommandHandler(Lexer lexer)
   {
     _lexer = lexer;
-    RL.Context.AutoCompletionHandler = new AutoCompletionHandler();
 
   }
-  public void Read()
+  
+  public void Execute(string command)
   {
-    _input = RL.Read("$ ");
-  }
-
-  public void Execute()
-  {
-    if (_input is null) Environment.Exit(0);
-    _lexer.Parse(_input);
+    _lexer.Parse(command);
 
     if (_lexer.Tokens.Count < 1) return;
 
@@ -155,7 +147,7 @@ class CommandHandler
   private static CommandResult HandleExecuteCommand(string command, List<string> args)
   {
     string[] exePath = Utils.FindExecutable(command);
-    if ( exePath.Length == 0)
+    if (exePath.Length == 0)
       return new(output: $"{command}: not found");
 
     if (!OperatingSystem.IsWindows() && !Utils.IsExecutable(exePath[0]))

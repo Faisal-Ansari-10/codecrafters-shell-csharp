@@ -1,7 +1,4 @@
-using System.Text.RegularExpressions;
-using ReadLine;
-
-class AutoCompletionHandler : IAutoCompleteHandler
+class AutoCompletionHandler
 {
     public char[] Separators { get; set; } = [' ',];
 

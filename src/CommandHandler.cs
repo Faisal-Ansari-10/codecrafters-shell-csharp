@@ -13,6 +13,8 @@ class CommandHandler
   public static readonly string[] BuiltIns = ["echo", "exit", "type", "pwd", "cd", "complete"];
   private readonly string[] _redirectOperators = [">", "1>", "2>", ">>", "1>>", "2>>"];
 
+  private readonly Dictionary<string, string> _completeCommand = [];
+
   public CommandHandler(Lexer lexer)
   {
     _lexer = lexer;
@@ -187,8 +189,23 @@ class CommandHandler
     return new(output, error);
   }
 
-  private static CommandResult HandleCompleteCommand(List<string> args)
+  private  CommandResult HandleCompleteCommand(List<string> args)
   {
+    if(args[0].Equals("-C"))
+    {
+      if(args.Count < 3) return new (output: "complete: Invalid syntax");
+      _completeCommand[args[2]] = args[1].Trim();
+      return new();
+    }
+
+    if(args[0].Equals("-p"))
+    {
+      if(args.Count < 2) return new (output: "complete: Invalid syntax");
+      if(_completeCommand.TryGetValue(args[1], out var path))
+      {
+        return new (output: $"complete -C '{path}' {args[1]}");
+      }
+    }
     return new(output: $"complete: {args[1]}: no completion specification");
   }
 }

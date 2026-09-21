@@ -18,7 +18,7 @@ class CommandHandler
     _lexer = lexer;
 
   }
-  
+
   public void Execute(string command)
   {
     _lexer.Parse(command);
@@ -58,6 +58,10 @@ class CommandHandler
       case "cd":
         if (args.Count > 0)
           result = HandleChangeDirectoryCommand(args[0]);
+        break;
+
+      case "complete":
+      result = HandleCompleteCommand(args);
         break;
 
       default:
@@ -100,7 +104,7 @@ class CommandHandler
     return new(output: string.Join(' ', args).Trim(), error: "");
   }
 
-  private CommandResult HandleTypeCommand(string command)
+  private static CommandResult HandleTypeCommand(string command)
   {
     if (BuiltIns.Contains(command))
     {
@@ -181,5 +185,10 @@ class CommandHandler
     var error = errorBuilder.ToString();
 
     return new(output, error);
+  }
+
+  private static CommandResult HandleCompleteCommand(List<string> args)
+  {
+    return new(output: $"complete: {args[1]}: no completion specification");
   }
 }

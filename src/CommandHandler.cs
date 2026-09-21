@@ -10,7 +10,7 @@ class CommandHandler
   }
 
   private readonly Lexer _lexer;
-  public static readonly string[] BuiltIns = ["echo", "exit", "type", "pwd", "cd"];
+  public static readonly string[] BuiltIns = ["echo", "exit", "type", "pwd", "cd", "complete"];
   private readonly string[] _redirectOperators = [">", "1>", "2>", ">>", "1>>", "2>>"];
 
   public CommandHandler(Lexer lexer)

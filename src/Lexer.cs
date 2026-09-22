@@ -1,108 +1,108 @@
 using System.Text;
+using CodeCrafters.Shell.src;
 
-class Lexer
+class Lexer(string input)
 {
-  private List<string> _tokens = [];
-  public IReadOnlyList<string> Tokens => _tokens.AsReadOnly();
-  public void Parse(string input)
+  private readonly string _input = input;
+  private int _pos = 0;
+
+  public List<Token> Tokenize()
   {
-    input = input.Trim();
-    _tokens = [];
+    var tokens = new List<Token>();
 
-    bool inSingleQuotes = false;
-    bool inDoubleQuotes = false;
-    bool escapeChar = false;
-
-    StringBuilder currentToken = new();
-
-    for (int i = 0; i < input.Length; i++)
+    while (_pos < _input.Length)
     {
-      char c = input[i];
+      SkipWhiteSpace();
+      if (_pos >= _input.Length) break;
 
-      if (c == '\'')
-      {
-        if (inSingleQuotes)
-        {
-          inSingleQuotes = false;
-        }
-        else if (escapeChar)
-        {
-          currentToken.Append(c);
-          escapeChar = false;
-        }
-        else if (inDoubleQuotes)
-        {
-          currentToken.Append(c);
-        }
-        else
-        {
-          inSingleQuotes = true;
-        }
-      }
-      else if (c == '"')
-      {
-        if (inSingleQuotes)
-        {
-          currentToken.Append(c);
-        }
-        else if (escapeChar)
-        {
-          currentToken.Append(c);
-          escapeChar = false;
-        }
-        else if (inDoubleQuotes)
-        {
-          inDoubleQuotes = false;
-        }
-        else
-        {
-          inDoubleQuotes = true;
-        }
+      char c = _input[_pos];
+      if (c == '>') { tokens.Add(ReadRedirect(tokens)); }
+      else { tokens.Add(ReadWord()); }
+    }
+    tokens.Add(new Token(TokenType.EOF, ""));
+    return tokens;
+  }
 
-      }
-      else if (c == '\\')
-      {
-        if (inSingleQuotes)
-        {
-          currentToken.Append(c);
-        }
-        else if (escapeChar)
-        {
-          currentToken.Append(c);
-          escapeChar = false;
-        }
-        else
-        {
-          escapeChar = true;
-        }
-
-      }
-      else if (c == ' ')
-      {
-        if (!(inSingleQuotes || inDoubleQuotes || escapeChar) && currentToken.Length > 0)
-        {
-          _tokens.Add(currentToken.ToString().Trim());
-          currentToken.Clear();
-        }
-        else if (inSingleQuotes || inDoubleQuotes || escapeChar)
-        {
-          currentToken.Append(c);
-        }
-
-        if (escapeChar) escapeChar = false;
-
-      }
-      else
-      {
-        currentToken.Append(c);
-        escapeChar = false;
-      }
+  private Token ReadWord()
+  {
+    var sb = new StringBuilder();
+    while (_pos < _input.Length && !IsUnquotedSeparator(_input[_pos]))
+    {
+      char c = _input[_pos];
+      if (c == '\'') { ReadSingleQuoted(sb); }
+      else if (c == '"') { ReadDoubleQuoted(sb); }
+      else if (c == '\\') { ReadEscape(sb); }
+      else { sb.Append(c); _pos++; }
     }
 
-    if (currentToken.Length > 0)
+    return new Token(Type: TokenType.Word, sb.ToString());
+  }
+
+  private void ReadSingleQuoted(StringBuilder sb)
+  {
+    _pos++;
+    while (_pos < _input.Length && _input[_pos] != '\'')
     {
-      _tokens.Add(currentToken.ToString().Trim());
+      sb.Append(_input[_pos]);
+      _pos++;
     }
+    _pos++;
+  }
+
+  private void ReadDoubleQuoted(StringBuilder sb)
+  {
+    _pos++;
+    while (_pos < _input.Length && _input[_pos] != '"')
+    {
+      char c = _input[_pos];
+      if (c == '\\') { ReadEscape(sb); }
+      else { sb.Append(c); _pos++; }
+    }
+    _pos++;
+  }
+
+  private void ReadEscape(StringBuilder sb)
+  {
+    _pos++;
+
+    if (_pos < _input.Length) sb.Append(_input[_pos]);
+    _pos++;
+  }
+
+  private static bool IsUnquotedSeparator(char c) => char.IsWhiteSpace(c) || "|<>&;".Contains(c);
+
+  private void SkipWhiteSpace()
+  {
+    while (_pos < _input.Length && char.IsWhiteSpace(_input[_pos])) { _pos++; }
+  }
+
+  private Token ReadRedirect(List<Token> tokens)
+  {
+    var sb = new StringBuilder();
+
+    if (_pos > 0 && (_input[_pos - 1] == '1' || _input[_pos - 1] == '2')
+      && tokens.Count > 0
+      && tokens[^1].Type == TokenType.Word
+      && tokens[^1].Value == _input[_pos - 1].ToString())
+    {
+      sb.Append(tokens[^1].Value);
+      tokens.RemoveAt(tokens.Count - 1);
+    }
+
+    sb.Append(_input[_pos]);
+    _pos++;
+
+    if (_pos < _input.Length && _input[_pos] == '>')
+    {
+      sb.Append(_input[_pos]);
+      _pos++;
+    }
+    string value = sb.ToString();
+
+    if (value == ">" || value == "1>") return new Token(TokenType.RedirectOut, value);
+    if (value == ">>" || value == "1>>") return new Token(TokenType.RedirectAppend, value);
+    if (value == "2>") return new Token(TokenType.RedirectErr, value);
+    return new Token(TokenType.RedirectErrAppend, value);
   }
 
 }

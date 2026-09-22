@@ -1,14 +1,32 @@
-class AutoCompletionHandler
+using CodeCrafters.Shell.src;
+
+class AutoCompletionHandler(ICommandRegistry builtins, ICompleteRegistry completeRegistry)
 {
+    private readonly ICommandRegistry _builtins = builtins;
+    private readonly ICompleteRegistry _completeRegistry = completeRegistry;
+
     private static readonly char[] PathSeparators = ['/', '\\'];
-    public string[] GetSuggestions(string text, int index) =>
-        index == 0 ? GetCommandSuggestions(text) : GetFileNameSuggestions(text, index);
-
-    private static string[] GetCommandSuggestions(string text)
+    public string[] GetSuggestions(string text, int index)
     {
-        if (text.Length == 0) return [];
+        string commandName = text.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
 
-        var builtInMatches = CommandHandler.BuiltIns
+        if (index > 0 && _completeRegistry.TryGet(commandName, out var path))
+        {
+            TextWriter output = new StringWriter();
+            TextWriter error = new StringWriter();
+
+            ExternalCommand.Run(path, [], output, error);
+
+            var result = output.ToString()?.Trim() ?? "";
+            return string.IsNullOrEmpty(result) ? [] : [result + " "];
+        }
+
+        return index == 0 ? GetCommandSuggestions(text) : GetFileNameSuggestions(text, index);
+    }
+    private string[] GetCommandSuggestions(string text)
+    {
+        var builtInMatches = _builtins
+            .Names
             .Where(b => b.StartsWith(text, StringComparison.OrdinalIgnoreCase));
 
         return [.. builtInMatches

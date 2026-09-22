@@ -88,7 +88,6 @@ static class Utils
     return [.. results.Distinct(StringComparer.OrdinalIgnoreCase)];
   }
 
-  [UnsupportedOSPlatform("windows")]
   public static bool IsExecutable(string filePath)
   {
     const UnixFileMode executeMask =
@@ -96,7 +95,7 @@ static class Utils
 
     try
     {
-      return (File.GetUnixFileMode(filePath) & executeMask) != 0;
+      return OperatingSystem.IsWindows() ||  (File.GetUnixFileMode(filePath) & executeMask) != 0;
     }
     catch
     {

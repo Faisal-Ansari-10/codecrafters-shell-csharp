@@ -1,35 +1,55 @@
 using System.Text;
+using CodeCrafters.Shell.src;
 
-class Shell
+class Shell(CommandDispatcher commandDispatcher, AutoCompletionHandler autoCompletion)
 {
-  private readonly CommandHandler _commandHandler;
-  private readonly AutoCompletionHandler _autoCompletion;
+  private readonly AutoCompletionHandler _autoCompletion = autoCompletion;
   private int _tabCount;
 
-  public Shell()
-  {
-    var lexer = new Lexer();
-    _commandHandler = new CommandHandler(lexer);
-    _autoCompletion = new AutoCompletionHandler();
-  }
+  private readonly CommandDispatcher _dispatcher = commandDispatcher;
 
   public void Run()
   {
     while (true)
     {
       Console.Write("$ ");
-      string? command = ReadCommand();
-      if (string.IsNullOrEmpty(command)) break;
+      string? input = ReadInput();
+      if (string.IsNullOrEmpty(input)) break;
 
-      _commandHandler.Execute(command);
+      var lexer = new Lexer(input);
+      var tokens = lexer.Tokenize();
+
+      var parser = new Parser(tokens);
+      var lines = parser.Parse();
+
+      foreach (var line in lines.Pipeline)
+      {
+        using TextWriter output = line.StdoutFile is not null
+        ? new StreamWriter(line.StdoutFile, append: line.AppendStdout)
+        : Console.Out;
+
+        using TextWriter error = line.StderrFile is not null
+        ? new StreamWriter(line.StderrFile, append: line.AppendStderr)
+        : Console.Error;
+
+        try
+        {
+          _dispatcher.Run(name: line.Name, args: [.. line.Args], output: output, error: error);
+        }
+        finally
+        {
+          if (!ReferenceEquals(output, Console.Out)) output.Dispose();
+          if (!ReferenceEquals(error, Console.Error)) error.Dispose();
+        }
+      }
     }
   }
 
-  private string? ReadCommand()
+  private string? ReadInput()
   {
     if (Console.IsInputRedirected) return Console.ReadLine();
 
-    StringBuilder command = new();
+    StringBuilder input = new();
     _tabCount = 0;
 
     while (true)
@@ -46,27 +66,27 @@ class Shell
       }
       else if (key == ConsoleKey.Backspace)
       {
-        if (command.Length == 0) continue;
-        command.Remove(command.Length - 1, 1);
+        if (input.Length == 0) continue;
+        input.Remove(input.Length - 1, 1);
         Console.Write("\b \b");
       }
       else if (key == ConsoleKey.Tab)
       {
-        HandleTab(command);
+        HandleTab(input);
       }
       else if (!char.IsControl(keyInfo.KeyChar))
       {
-        command.Append(keyInfo.KeyChar);
+        input.Append(keyInfo.KeyChar);
         Console.Write(keyInfo.KeyChar);
       }
     }
 
-    return command.ToString();
+    return input.ToString();
   }
 
-  private void HandleTab(StringBuilder command)
+  private void HandleTab(StringBuilder input)
   {
-    string current = command.ToString();
+    string current = input.ToString();
     int index = current.LastIndexOf(' ') + 1;
     string word = current[index..];
 
@@ -81,7 +101,7 @@ class Shell
 
     if (matches.Length == 1)
     {
-      ReplaceWord(command, index, matches[0]);
+      ReplaceWord(input, index, matches[0]);
       _tabCount = 0;
       return;
     }
@@ -89,8 +109,8 @@ class Shell
     string lcp = FindLCP(matches);
     if (lcp.Length > word.Length)
     {
-      ReplaceWord(command, index, lcp);
-      _tabCount = 0;   
+      ReplaceWord(input, index, lcp);
+      _tabCount = 0;
       return;
     }
 
@@ -102,7 +122,7 @@ class Shell
 
     Console.WriteLine();
     Console.WriteLine(string.Join("  ", matches.Select(DisplayName)));
-    Console.Write("$ " + command);
+    Console.Write("$ " + input);
   }
 
   private static void ReplaceWord(StringBuilder command, int index, string replacement)

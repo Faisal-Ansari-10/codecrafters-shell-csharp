@@ -13,11 +13,9 @@ public class CompleteCommand(ICompleteRegistry completeRegistry) : ICommand
 
     if (flag.Equals("-C"))
     {
-      _registry.Register(args[2], args[1]);
-      return;
+      _registry.Add(args[2], args[1]);
     }
-
-    if (flag.Equals("-p"))
+    else if (flag.Equals("-p"))
     {
       if (_registry.TryGet(args[1], out var path))
       {
@@ -28,7 +26,10 @@ public class CompleteCommand(ICompleteRegistry completeRegistry) : ICommand
         output.WriteLine($"complete: {args[1]}: no completion specification");
       }
 
-      return;
+    }
+    else if (flag.Equals("-r"))
+    {
+      _registry.Remove(args[1]);
     }
   }
 }

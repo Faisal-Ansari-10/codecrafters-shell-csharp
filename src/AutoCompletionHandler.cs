@@ -8,26 +8,25 @@ class AutoCompletionHandler(ICommandRegistry builtins, ICompleteRegistry complet
     private static readonly char[] PathSeparators = ['/', '\\'];
     public string[] GetSuggestions(string text, int index)
     {
-        var textSplit = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        string commandName =  textSplit.FirstOrDefault() ?? "";
+        string commandName = text.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
 
         if (index > 0 && _completeRegistry.TryGet(commandName, out var path))
         {
-            TextWriter output = new StringWriter();
-            TextWriter error = new StringWriter();
+            TextWriter output = new StringWriter{NewLine = "\n"};
+            TextWriter error = new StringWriter{NewLine = "\n"};
 
-            List<string> args = [];
-            if(textSplit.Length > 0) args.Add(textSplit[0]);
-            if(textSplit.Length > 1) args.Add(textSplit[^1]);
-            if(textSplit.Length > 2) args.Add(textSplit[^2]);
+            string currentWord = text[index..];
+            string before = text[..index].TrimEnd();
+            string previousWord = before.Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? "";
+            
+            string[] args = [commandName, currentWord, previousWord];
 
             Environment.SetEnvironmentVariable("COMP_LINE", text.Trim('\n'));
             Environment.SetEnvironmentVariable("COMP_POINT", text.Length.ToString());
 
-            ExternalCommand.Run(path, [..args], output, error);
-
-            var result = output.ToString()?.Trim() ?? "";
-            return string.IsNullOrEmpty(result) ? [] : [result + " "];
+            ExternalCommand.Run(path, args, output, error);
+            var result = output?.ToString()?.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(r => r + " ").ToArray() ?? [];
+            return result;
         }
 
         return index == 0 ? GetCommandSuggestions(text) : GetFileNameSuggestions(text, index);

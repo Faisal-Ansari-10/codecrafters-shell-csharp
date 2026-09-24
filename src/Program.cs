@@ -16,6 +16,7 @@ builtins.Register(new CdCommand());
 builtins.Register(new ExitCommand());
 builtins.Register(new TypeCommand(builtins));
 builtins.Register(new CompleteCommand(completeRegistry));
+builtins.Register(new JobsCommand());
 
 var cmdDispatcher = new CommandDispatcher(builtins);
 var autoCompletion = new AutoCompletionHandler(builtins, completeRegistry);

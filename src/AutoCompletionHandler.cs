@@ -20,7 +20,10 @@ class AutoCompletionHandler(ICommandRegistry builtins, ICompleteRegistry complet
             if(textSplit.Length > 0) args.Add(textSplit[0]);
             if(textSplit.Length > 1) args.Add(textSplit[^1]);
             if(textSplit.Length > 2) args.Add(textSplit[^2]);
-            
+
+            Environment.SetEnvironmentVariable("COMP_LINE", text.Trim('\n'));
+            Environment.SetEnvironmentVariable("COMP_POINT", text.Length.ToString());
+
             ExternalCommand.Run(path, [..args], output, error);
 
             var result = output.ToString()?.Trim() ?? "";

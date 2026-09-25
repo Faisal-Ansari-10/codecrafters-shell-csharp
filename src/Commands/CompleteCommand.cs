@@ -7,7 +7,7 @@ public class CompleteCommand(ICompleteRegistry completeRegistry) : ICommand
   public string Name => "complete";
   private readonly ICompleteRegistry _registry = completeRegistry;
 
-  public void Execute(string[] args, TextWriter output, TextWriter error)
+  public Task Execute(string[] args, TextWriter output, TextWriter error)
   {
     var flag = args[0];
 
@@ -31,5 +31,7 @@ public class CompleteCommand(ICompleteRegistry completeRegistry) : ICommand
     {
       _registry.Remove(args[1]);
     }
+
+    return Task.CompletedTask;
   }
 }

@@ -16,4 +16,5 @@ public class Command
 public class CommandLine
 {
   public List<Command> Pipeline = [];
+  public bool RunInBackground;
 }

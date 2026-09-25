@@ -1,12 +1,13 @@
 using CodeCrafters.Shell.src;
 
-class AutoCompletionHandler(ICommandRegistry builtins, ICompleteRegistry completeRegistry)
+class AutoCompletionHandler(ICommandRegistry builtins, ICompleteRegistry completeRegistry, IJobManager jobManager)
 {
     private readonly ICommandRegistry _builtins = builtins;
     private readonly ICompleteRegistry _completeRegistry = completeRegistry;
+    private readonly IJobManager _jobManager = jobManager;
 
     private static readonly char[] PathSeparators = ['/', '\\'];
-    public string[] GetSuggestions(string text, int index)
+    public async Task<string[]> GetSuggestions(string text, int index)
     {
         string commandName = text.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
 
@@ -24,7 +25,8 @@ class AutoCompletionHandler(ICommandRegistry builtins, ICompleteRegistry complet
             Environment.SetEnvironmentVariable("COMP_LINE", text.Trim('\n'));
             Environment.SetEnvironmentVariable("COMP_POINT", text.Length.ToString());
 
-            ExternalCommand.Run(path, args, output, error);
+            var job = _jobManager.Start(path, args, output, error);
+            await job.Completion;
             var result = output?.ToString()?.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(r => r + " ").ToArray() ?? [];
             return result;
         }

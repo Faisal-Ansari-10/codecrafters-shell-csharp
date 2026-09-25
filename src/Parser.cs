@@ -12,6 +12,8 @@ public class Parser(List<Token> tokens)
   {
     var line = new CommandLine();
     line.Pipeline.Add(ParseCommand());
+
+    if (Match(TokenType.Background)) { line.RunInBackground = true; Advance(); }
     Expect(TokenType.EOF);
     return line;
   }
@@ -36,7 +38,7 @@ public class Parser(List<Token> tokens)
   }
 
   private bool IsCommandEnd() =>
-          Match(TokenType.Pipe) || Match(TokenType.EOF) || Match(TokenType.Semicolon);
+          Match(TokenType.Pipe) || Match(TokenType.EOF) || Match(TokenType.Semicolon) || Match(TokenType.Background);
 
   private bool Match(TokenType t) => _tokens[_pos].Type == t;
   private Token Advance() => _tokens[_pos++];

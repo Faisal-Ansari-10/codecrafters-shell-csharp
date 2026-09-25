@@ -6,6 +6,7 @@ public class EchoCommand : ICommand
 {
   public string Name => "echo";
 
-  public void Execute(string[] args, TextWriter output, TextWriter error) =>
-    output.WriteLine(string.Join(' ', args));
+  public Task Execute(string[] args, TextWriter output, TextWriter error) =>
+   output.WriteLineAsync(string.Join(' ', args));
+  
 }

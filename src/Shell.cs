@@ -8,33 +8,33 @@ class Shell(CommandDispatcher commandDispatcher, AutoCompletionHandler autoCompl
 
   private readonly CommandDispatcher _dispatcher = commandDispatcher;
 
-  public void Run()
+  public async Task Run()
   {
     while (true)
     {
       Console.Write("$ ");
-      string? input = ReadInput();
+      string? input = await ReadInput();
       if (string.IsNullOrEmpty(input)) break;
 
       var lexer = new Lexer(input);
       var tokens = lexer.Tokenize();
 
       var parser = new Parser(tokens);
-      var lines = parser.Parse();
+      var line = parser.Parse();
 
-      foreach (var line in lines.Pipeline)
+      foreach (var cmd in line.Pipeline)
       {
-        using TextWriter output = line.StdoutFile is not null
-        ? new StreamWriter(line.StdoutFile, append: line.AppendStdout)
+        using TextWriter output = cmd.StdoutFile is not null
+        ? new StreamWriter(cmd.StdoutFile, append: cmd.AppendStdout)
         : Console.Out;
 
-        using TextWriter error = line.StderrFile is not null
-        ? new StreamWriter(line.StderrFile, append: line.AppendStderr)
+        using TextWriter error = cmd.StderrFile is not null
+        ? new StreamWriter(cmd.StderrFile, append: cmd.AppendStderr)
         : Console.Error;
 
         try
         {
-          _dispatcher.Run(name: line.Name, args: [.. line.Args], output: output, error: error);
+          await _dispatcher.Run(name: cmd.Name, args: [.. cmd.Args], runInBackground: line.RunInBackground, output: output, error: error);
         }
         finally
         {
@@ -45,7 +45,7 @@ class Shell(CommandDispatcher commandDispatcher, AutoCompletionHandler autoCompl
     }
   }
 
-  private string? ReadInput()
+  private async Task<string?> ReadInput()
   {
     if (Console.IsInputRedirected) return Console.ReadLine();
 
@@ -72,7 +72,7 @@ class Shell(CommandDispatcher commandDispatcher, AutoCompletionHandler autoCompl
       }
       else if (key == ConsoleKey.Tab)
       {
-        HandleTab(input);
+        await HandleTab(input);
       }
       else if (!char.IsControl(keyInfo.KeyChar))
       {
@@ -84,13 +84,13 @@ class Shell(CommandDispatcher commandDispatcher, AutoCompletionHandler autoCompl
     return input.ToString();
   }
 
-  private void HandleTab(StringBuilder input)
+  private async Task HandleTab(StringBuilder input)
   {
     string current = input.ToString();
     int index = current.LastIndexOf(' ') + 1;
     string word = current[index..];
 
-    string[] matches = _autoCompletion.GetSuggestions(current, index);
+    string[] matches = await _autoCompletion.GetSuggestions(current, index);
     _tabCount++;
 
     if (matches.Length == 0)

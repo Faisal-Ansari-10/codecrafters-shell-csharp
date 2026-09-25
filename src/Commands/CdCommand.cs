@@ -6,7 +6,7 @@ public class CdCommand : ICommand
 {
   public string Name => "cd";
 
-  public void Execute(string[] args, TextWriter output, TextWriter error)
+  public Task Execute(string[] args, TextWriter output, TextWriter error)
   {
     var directory = args[0];
     if (directory == "~")
@@ -16,8 +16,7 @@ public class CdCommand : ICommand
 
     if (string.IsNullOrEmpty(directory) || !Directory.Exists(directory))
     {
-      output.WriteLine($"cd: {directory}: No such file or directory");
-      return;
+     return output.WriteLineAsync($"cd: {directory}: No such file or directory");   
     }
 
     try
@@ -25,5 +24,7 @@ public class CdCommand : ICommand
       Directory.SetCurrentDirectory(directory);
     }
     catch (Exception e) { error.WriteLine(e.Message); }
+
+    return Task.CompletedTask;
   }
 }

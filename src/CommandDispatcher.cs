@@ -4,14 +4,26 @@ using CodeCrafters.Shell.src.Commands;
 
 namespace CodeCrafters.Shell.src;
 
-public class CommandDispatcher(ICommandRegistry builtinCommands)
+public class CommandDispatcher(ICommandRegistry builtinCommands, IJobManager jobManager)
 {
 
-  public void Run(string name, string[] args, TextWriter output, TextWriter error)
+  public async Task Run(string name, string[] args, bool runInBackground, TextWriter output, TextWriter error)
   {
-    if(builtinCommands.TryGet(name, out var cmd))
-      cmd!.Execute(args, output, error);
+    Task task;
+    if (builtinCommands.TryGet(name, out var cmd))
+    {
+      task = cmd!.Execute(args, output, error);
+    }
     else
-      ExternalCommand.Run(name, args, output, error);
+    {
+      var job = jobManager.Start(name, args, output, error);
+      if(runInBackground)
+      {
+        await output.WriteLineAsync($"[{job.Id}] {job.ProcessId}");
+      }
+      task = job.Completion;
+    }
+
+    if (!runInBackground) await task;
   }
 }

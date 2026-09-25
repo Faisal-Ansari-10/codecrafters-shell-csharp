@@ -12,6 +12,7 @@ public enum TokenType
   RedirectErrAppend,
   RedirectIn,
   Semicolon,
+  Background,
   EOF
 }
 

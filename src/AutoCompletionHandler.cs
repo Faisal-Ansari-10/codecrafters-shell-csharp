@@ -21,7 +21,7 @@ class AutoCompletionHandler(ICommandRegistry builtins, ICompleteRegistry complet
             Environment.SetEnvironmentVariable("COMP_LINE", text.Trim('\n'));
             Environment.SetEnvironmentVariable("COMP_POINT", text.Length.ToString());
 
-            var (_, completion) = runner.Run(path, args, output, error);
+            var (_, completion, _) = runner.Run(path, args, output, error);
             await completion;
             var result = output?.ToString()?.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(r => r + " ").ToArray() ?? [];
             return result;

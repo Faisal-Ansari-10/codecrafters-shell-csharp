@@ -1,32 +1,28 @@
 using CodeCrafters.Shell.src;
 
-class AutoCompletionHandler(ICommandRegistry builtins, ICompleteRegistry completeRegistry, IJobManager jobManager)
+class AutoCompletionHandler(ICommandRegistry builtins, ICompleteRegistry completeRegistry, IProcessRunner runner)
 {
-    private readonly ICommandRegistry _builtins = builtins;
-    private readonly ICompleteRegistry _completeRegistry = completeRegistry;
-    private readonly IJobManager _jobManager = jobManager;
-
     private static readonly char[] PathSeparators = ['/', '\\'];
     public async Task<string[]> GetSuggestions(string text, int index)
     {
         string commandName = text.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "";
 
-        if (index > 0 && _completeRegistry.TryGet(commandName, out var path))
+        if (index > 0 && completeRegistry.TryGet(commandName, out var path))
         {
-            TextWriter output = new StringWriter{NewLine = "\n"};
-            TextWriter error = new StringWriter{NewLine = "\n"};
+            TextWriter output = new StringWriter { NewLine = "\n" };
+            TextWriter error = new StringWriter { NewLine = "\n" };
 
             string currentWord = text[index..];
             string before = text[..index].TrimEnd();
             string previousWord = before.Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault() ?? "";
-            
+
             string[] args = [commandName, currentWord, previousWord];
 
             Environment.SetEnvironmentVariable("COMP_LINE", text.Trim('\n'));
             Environment.SetEnvironmentVariable("COMP_POINT", text.Length.ToString());
 
-            var job = _jobManager.Start(path, args, output, error);
-            await job.Completion;
+            var (_, completion) = runner.Run(path, args, output, error);
+            await completion;
             var result = output?.ToString()?.Split('\n', StringSplitOptions.RemoveEmptyEntries).Select(r => r + " ").ToArray() ?? [];
             return result;
         }
@@ -35,7 +31,7 @@ class AutoCompletionHandler(ICommandRegistry builtins, ICompleteRegistry complet
     }
     private string[] GetCommandSuggestions(string text)
     {
-        var builtInMatches = _builtins
+        var builtInMatches = builtins
             .Names
             .Where(b => b.StartsWith(text, StringComparison.OrdinalIgnoreCase));
 

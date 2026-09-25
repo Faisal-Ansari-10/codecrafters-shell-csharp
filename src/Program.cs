@@ -9,7 +9,8 @@ using CodeCrafters.Shell.src;
 using CodeCrafters.Shell.src.Commands;
 
 CompleteRegistry completeRegistry = new();
-JobManager jobManager = new();
+ProcessRunner runner = new();
+JobManager jobManager = new(runner);
 BuiltinCommandRegistry builtins = new();
 builtins.Register(new EchoCommand());
 builtins.Register(new PwdCommand());
@@ -20,6 +21,6 @@ builtins.Register(new CompleteCommand(completeRegistry));
 builtins.Register(new JobsCommand(jobManager));
 
 var cmdDispatcher = new CommandDispatcher(builtins, jobManager);
-var autoCompletion = new AutoCompletionHandler(builtins, completeRegistry, jobManager);
+var autoCompletion = new AutoCompletionHandler(builtins, completeRegistry, runner);
 var shell = new Shell(cmdDispatcher, autoCompletion);
 await shell.Run();

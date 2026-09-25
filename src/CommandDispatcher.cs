@@ -16,8 +16,8 @@ public class CommandDispatcher(ICommandRegistry builtinCommands, IJobManager job
     }
     else
     {
-      var job = jobManager.Start(name, args, output, error);
-      if(runInBackground)
+      var job = jobManager.Start(name, args, output, error, runInBackground);
+      if (runInBackground)
       {
         await output.WriteLineAsync($"[{job.Id}] {job.ProcessId}");
       }

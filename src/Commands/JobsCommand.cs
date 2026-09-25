@@ -8,12 +8,19 @@ public class JobsCommand(IJobManager jobManager) : ICommand
 
   private readonly IJobManager _jobManager = jobManager;
 
-  public Task Execute(string[] args, TextWriter output, TextWriter error)
+  public async Task Execute(string[] args, TextWriter output, TextWriter error)
   {
-    var latestUnfinishedJob = _jobManager.List().LastOrDefault(j => j.IsRunning);
+    var jobs = _jobManager.List()
+    .Where(j => j.IsBackground)
+    .Where(j => j.IsRunning)
+    .OrderBy(j => j.Id)
+    .ToArray();
 
-    if (latestUnfinishedJob is null) return Task.CompletedTask;
 
-    return output.WriteLineAsync(string.Format("[{0}]+  {1,-24}{2}", latestUnfinishedJob.Id, latestUnfinishedJob.IsRunning ? "Running" : "", latestUnfinishedJob.Command));
+    for (int i = 0; i < jobs.Length; i++)
+    {
+      char marker = i == jobs.Length - 1 ? '+' : i == jobs.Length - 2 ? '-' : ' ';
+      await output.WriteLineAsync($"[{jobs[i].Id}]{marker}  {"Running",-24}{jobs[i].Command}");
+    }
   }
 }

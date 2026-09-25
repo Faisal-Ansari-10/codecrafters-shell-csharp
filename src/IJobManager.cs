@@ -3,7 +3,7 @@ using System.Diagnostics;
 
 namespace CodeCrafters.Shell.src;
 
-public sealed record Job(int Id, int ProcessId, Task Completion)
+public sealed record Job(int Id, int ProcessId,string Command, Task Completion)
 {
   public bool IsRunning => !Completion.IsCompleted;
 }
@@ -22,7 +22,7 @@ public class JobManager : IJobManager
   {
     var (processId, processTask) = Run(name, args, output, error);
     _jobId++;
-    Job job = new(_jobId, processId, processTask);
+    Job job = new(_jobId, processId,$"{name} {string.Join(' ', args)}", processTask);
     _jobs.Add(job);
     return job;
   }

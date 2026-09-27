@@ -20,18 +20,23 @@ public interface IJobManager
 
 public class JobManager(IProcessRunner runner) : IJobManager
 {
-  private int _jobId = 0;
   private readonly List<Job> _jobs = [];
 
+  private int JobId()
+  {
+    if(_jobs.Count == 0) return 1;
+    return _jobs.Max(j => j.Id) + 1;
+  }
   public Job Start(string name, string[] args, TextWriter output, TextWriter error, bool isBackground)
   {
-    var (processId, completion, isRunning) = runner.Run(name, args, output, error);
-    _jobId++;
+    var (processId, completion, isRunning) = runner.Run(name, args, output, error);  
     var command = new[] { name }.Concat(args).ToArray();
-    Job job = new(_jobId, processId, command, completion, isBackground, isRunning);
+    Job job = new(JobId(), processId, command, completion, isBackground, isRunning);
     _jobs.Add(job);
     return job;
   }
+
+
 
   public IReadOnlyList<Job> SnapshotJobs() => _jobs
                             .Where(j => j.IsBackground)

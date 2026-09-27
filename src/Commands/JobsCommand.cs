@@ -6,33 +6,17 @@ public class JobsCommand(IJobManager jobManager) : ICommand
 {
   public string Name => "jobs";
 
-  private readonly IJobManager _jobManager = jobManager;
 
   public async Task Execute(string[] args, TextWriter output, TextWriter error)
   {
-    var jobs = _jobManager.List()
-      .Where(j => j.IsBackground)
-      .OrderBy(j => j.Id)
-      .ToArray();
+    var snapshot = jobManager.SnapshotJobs();
 
-    List<int> finishedJobIds = [];
-    for (int i = 0; i < jobs.Length; i++)
+    for (int i = 0; i < snapshot.Count; i++)
     {
-      char marker = i == jobs.Length - 1 ? '+' : i == jobs.Length - 2 ? '-' : ' ';
-      bool isRunning = jobs[i].IsRunning();
-      string status = isRunning ? "Running" : "Done";
-
-      if (!isRunning) finishedJobIds.Add(jobs[i].Id);
-      
-      var commandParts = isRunning ? jobs[i].Command.Append("&") : jobs[i].Command;
-      string command = string.Join(' ', commandParts);
-
-      await output.WriteLineAsync($"[{jobs[i].Id}]{marker}  {status,-24}{command}");
-    }
-
-    foreach (var id in finishedJobIds)
-    {
-      _jobManager.Kill(id);
+      var job = snapshot[i];
+      var jobLine = jobManager.FormatJobLine(i, snapshot);
+      await output.WriteLineAsync(jobLine);
+      if (job.Completed) jobManager.Kill(job);
     }
   }
 }

@@ -1,17 +1,27 @@
 using System.Text;
 using CodeCrafters.Shell.src;
 
-class Shell(CommandDispatcher commandDispatcher, AutoCompletionHandler autoCompletion)
+class Shell(CommandDispatcher commandDispatcher,
+AutoCompletionHandler autoCompletion,
+IJobManager jobManager)
 {
-  private readonly AutoCompletionHandler _autoCompletion = autoCompletion;
   private int _tabCount;
-
-  private readonly CommandDispatcher _dispatcher = commandDispatcher;
 
   public async Task Run()
   {
     while (true)
     {
+      var jobs = jobManager.SnapshotJobs();
+      for (int i = 0; i < jobs.Count; i++)
+      {
+        var job = jobs[i];
+        if (!job.Completed) continue;
+
+        var jobline = jobManager.FormatJobLine(i, jobs);
+        Console.Out.WriteLine(jobline);
+        jobManager.Kill(job);
+      }
+
       Console.Write("$ ");
       string? input = await ReadInput();
       if (string.IsNullOrEmpty(input)) break;
@@ -34,7 +44,7 @@ class Shell(CommandDispatcher commandDispatcher, AutoCompletionHandler autoCompl
 
         try
         {
-          await _dispatcher.Run(name: cmd.Name, args: [.. cmd.Args], runInBackground: line.RunInBackground, output: output, error: error);
+          await commandDispatcher.Run(name: cmd.Name, args: [.. cmd.Args], runInBackground: line.RunInBackground, output: output, error: error);
         }
         finally
         {
@@ -90,7 +100,7 @@ class Shell(CommandDispatcher commandDispatcher, AutoCompletionHandler autoCompl
     int index = current.LastIndexOf(' ') + 1;
     string word = current[index..];
 
-    string[] matches = await _autoCompletion.GetSuggestions(current, index);
+    string[] matches = await autoCompletion.GetSuggestions(current, index);
     _tabCount++;
 
     if (matches.Length == 0)

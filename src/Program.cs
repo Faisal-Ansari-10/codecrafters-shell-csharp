@@ -22,5 +22,5 @@ builtins.Register(new JobsCommand(jobManager));
 
 var cmdDispatcher = new CommandDispatcher(builtins, jobManager);
 var autoCompletion = new AutoCompletionHandler(builtins, completeRegistry, runner);
-var shell = new Shell(cmdDispatcher, autoCompletion);
+var shell = new Shell(cmdDispatcher, autoCompletion, jobManager);
 await shell.Run();

@@ -19,6 +19,7 @@ builtins.Register(new ExitCommand());
 builtins.Register(new TypeCommand(builtins));
 builtins.Register(new CompleteCommand(completeRegistry));
 builtins.Register(new JobsCommand(jobManager));
+builtins.Register(new HistoryCommand());
 
 var cmdDispatcher = new CommandDispatcher(builtins, jobManager);
 var autoCompletion = new AutoCompletionHandler(builtins, completeRegistry, runner);

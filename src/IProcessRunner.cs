@@ -42,7 +42,7 @@ public class ProcessRunner : IProcessRunner
     {
       FileName = name,
       RedirectStandardInput = redirectStdin,
-      RedirectStandardOutput = true,
+      RedirectStandardOutput = redirectStdout,
       RedirectStandardError = redirectStderr,
       UseShellExecute = false,
       CreateNoWindow = true
@@ -52,14 +52,19 @@ public class ProcessRunner : IProcessRunner
 
     var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
 
-    process.OutputDataReceived += (_, e) => { if (e.Data is not null) output.WriteLine(e.Data); };
-    process.ErrorDataReceived += (_, e) => { if (e.Data is not null) error.WriteLine(e.Data); };
+    if (redirectStdout)
+      process.OutputDataReceived += (_, e) => { if (e.Data is not null) output.WriteLine(e.Data); };
+
+    if (redirectStderr)
+      process.ErrorDataReceived += (_, e) => { if (e.Data is not null) error.WriteLine(e.Data); };
 
     process.Start();
 
     if (redirectStdin) _ = PumpInputAsync(input, process);
-    process.BeginOutputReadLine();
-    process.BeginErrorReadLine();
+    if (redirectStdout)
+      process.BeginOutputReadLine();
+    if (redirectStderr)
+      process.BeginErrorReadLine();
 
     var pid = process.Id;
     var completion = process.WaitForExitAsync()

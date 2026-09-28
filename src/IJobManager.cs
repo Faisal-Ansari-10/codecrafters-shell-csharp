@@ -10,7 +10,7 @@ public sealed record Job(int Id, int ProcessId, string[] Command, Task Completio
 
 public interface IJobManager
 {
-  Job Start(string name, string[] args, TextWriter output, TextWriter error, bool isBackground);
+  Task<Job> Start(RunContext context, bool isBackground);
   IReadOnlyList<Job> SnapshotJobs();
   bool Kill(Job job);
 
@@ -24,13 +24,13 @@ public class JobManager(IProcessRunner runner) : IJobManager
 
   private int JobId()
   {
-    if(_jobs.Count == 0) return 1;
+    if (_jobs.Count == 0) return 1;
     return _jobs.Max(j => j.Id) + 1;
   }
-  public Job Start(string name, string[] args, TextWriter output, TextWriter error, bool isBackground)
+  public async Task<Job> Start(RunContext context, bool isBackground)
   {
-    var (processId, completion, isRunning) = runner.Run(name, args, output, error);  
-    var command = new[] { name }.Concat(args).ToArray();
+    var (processId, completion, isRunning) = await runner.Run(context);
+    var command = new[] { context.Name }.Concat(context.Args).ToArray();
     Job job = new(JobId(), processId, command, completion, isBackground, isRunning);
     _jobs.Add(job);
     return job;

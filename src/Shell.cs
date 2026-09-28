@@ -1,3 +1,4 @@
+using System.IO.Pipelines;
 using System.Text;
 using CodeCrafters.Shell.src;
 
@@ -23,38 +24,66 @@ IJobManager jobManager)
       }
 
       Console.Write("$ ");
-      string? input = await ReadInput();
-      if (string.IsNullOrEmpty(input)) break;
+      string? inputLine = await ReadInput();
+      if (string.IsNullOrEmpty(inputLine)) break;
 
-      var lexer = new Lexer(input);
+      var lexer = new Lexer(inputLine);
       var tokens = lexer.Tokenize();
 
       var parser = new Parser(tokens);
       var line = parser.Parse();
+      var n = line.Pipeline.Count;
+      var pipes = Enumerable.Range(0, n - 1).Select(_ => new Pipe()).ToArray();
+      var stages = new List<Task>();
 
-      foreach (var cmd in line.Pipeline)
+      for (int i = 0; i < n; i++)
       {
-        using TextWriter output = cmd.StdoutFile is not null
-        ? new StreamWriter(cmd.StdoutFile, append: cmd.AppendStdout)
-        : Console.Out;
+        var cmd = line.Pipeline[i];
+        bool isFirst = i == 0, isLast = i == n - 1;
 
-        using TextWriter error = cmd.StderrFile is not null
-        ? new StreamWriter(cmd.StderrFile, append: cmd.AppendStderr)
-        : Console.Error;
+        TextReader input = isFirst
+          ? TextReader.Null
+          : new StreamReader(pipes[i - 1].Reader.AsStream());
 
-        try
-        {
-          await commandDispatcher.Run(name: cmd.Name, args: [.. cmd.Args], runInBackground: line.RunInBackground, output: output, error: error);
-        }
-        finally
-        {
-          if (!ReferenceEquals(output, Console.Out)) output.Dispose();
-          if (!ReferenceEquals(error, Console.Error)) error.Dispose();
-        }
+        TextWriter output = isLast
+          ? (cmd.StdoutFile is not null
+              ? new StreamWriter(cmd.StdoutFile, append: cmd.AppendStdout)
+              : Console.Out)
+          : new StreamWriter(pipes[i].Writer.AsStream()) { AutoFlush = true };
+
+        TextWriter error = cmd.StderrFile is not null
+          ? new StreamWriter(cmd.StderrFile, append: cmd.AppendStderr)
+          : Console.Error;
+
+        var context = new RunContext(
+          Name: cmd.Name,
+          Input: input,
+          RedirectStandardInput: !isFirst,
+          RedirectStandardOutput: !isLast || cmd.StdoutFile is not null,
+          RedirectStandardError: true,
+          Args: [.. cmd.Args],
+          Output: output,
+          Error: error);
+
+        Task completion = await commandDispatcher.Start(context, line.RunInBackground);
+        stages.Add(Finish(completion, input, output, error));
       }
+
+      if (!line.RunInBackground) await Task.WhenAll(stages);
     }
   }
 
+
+  private static async Task Finish(Task completion, params IDisposable[] resources)
+  {
+    try { await completion; }
+    finally
+    {
+      foreach (var resource in resources)
+        if (!ReferenceEquals(resource, Console.Out) && !ReferenceEquals(resource, Console.Error))
+          resource.Dispose();
+    }
+  }
   private async Task<string?> ReadInput()
   {
     if (Console.IsInputRedirected) return Console.ReadLine();

@@ -1,17 +1,30 @@
 using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace CodeCrafters.Shell.src;
 
+public sealed record RunContext(
+  string Name,
+  TextReader Input,
+  bool RedirectStandardInput,
+  bool RedirectStandardOutput,
+  bool RedirectStandardError,
+  string[] Args,
+  TextWriter Output,
+  TextWriter Error
+);
 public interface IProcessRunner
 {
-  (int processId, Task completion, Func<bool> isRunning) Run(string name, string[] args, TextWriter output, TextWriter error);
+  Task<(int processId, Task completion, Func<bool> isRunning)> Run(RunContext context);
 }
 
 public class ProcessRunner : IProcessRunner
 {
-  public (int processId, Task completion, Func<bool> isRunning) Run(string name, string[] args, TextWriter output, TextWriter error)
+  async Task<(int processId, Task completion, Func<bool> isRunning)> IProcessRunner.Run(RunContext context)
   {
+    var (name, input, redirectStdin, redirectStdout, redirectStderr, args, output, error) = context;
+
     string? resolvedPath = ResolveForValidation(name);
     if (resolvedPath is null)
     {
@@ -28,8 +41,9 @@ public class ProcessRunner : IProcessRunner
     var startInfo = new ProcessStartInfo
     {
       FileName = name,
+      RedirectStandardInput = redirectStdin,
       RedirectStandardOutput = true,
-      RedirectStandardError = true,
+      RedirectStandardError = redirectStderr,
       UseShellExecute = false,
       CreateNoWindow = true
     };
@@ -42,6 +56,8 @@ public class ProcessRunner : IProcessRunner
     process.ErrorDataReceived += (_, e) => { if (e.Data is not null) error.WriteLine(e.Data); };
 
     process.Start();
+
+    if (redirectStdin) _ = PumpInputAsync(input, process);
     process.BeginOutputReadLine();
     process.BeginErrorReadLine();
 
@@ -73,6 +89,26 @@ public class ProcessRunner : IProcessRunner
 
     var found = Utils.FindExecutable(name);
     return found.Length == 0 ? null : found[0];
+  }
+
+  private static async Task PumpInputAsync(TextReader input, Process process)
+  {
+    try
+    {
+      var stdin = process.StandardInput;
+      stdin.AutoFlush = true;
+      var buffer = new char[4096];
+      int n;
+      while ((n = await input.ReadAsync(buffer)) > 0)
+        await stdin.WriteAsync(buffer.AsMemory(0, n));
+    }
+    catch (IOException) { }
+    catch (ObjectDisposedException) { }
+    catch (InvalidOperationException) { }
+    finally
+    {
+      try { process.StandardInput.Close(); } catch { }
+    }
   }
 
 }

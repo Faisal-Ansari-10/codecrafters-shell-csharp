@@ -17,7 +17,8 @@ class Lexer(string input)
 
       char c = _input[_pos];
       if (c == '>') { tokens.Add(ReadRedirect(tokens)); }
-      else if (c == '&') { tokens.Add(ReadAmpersand());}
+      else if (c == '|') { tokens.Add(ReadOperator()); }
+      else if (c == '&') { tokens.Add(ReadAmpersand()); }
       else { tokens.Add(ReadWord()); }
     }
     tokens.Add(new Token(TokenType.EOF, ""));
@@ -70,7 +71,12 @@ class Lexer(string input)
     _pos++;
   }
 
-
+  private Token ReadOperator()
+  {
+    var token = new Token(TokenType.Pipe, "|");
+    _pos++;
+    return token;
+  }
   private Token ReadAmpersand()
   {
     var token = new Token(TokenType.Background, "&");

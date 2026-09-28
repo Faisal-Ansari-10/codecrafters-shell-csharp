@@ -7,23 +7,17 @@ namespace CodeCrafters.Shell.src;
 public class CommandDispatcher(ICommandRegistry builtinCommands, IJobManager jobManager)
 {
 
-  public async Task Run(string name, string[] args, bool runInBackground, TextWriter output, TextWriter error)
+  public async Task<Task> Start(RunContext context, bool runInBackground)
   {
-    Task task;
-    if (builtinCommands.TryGet(name, out var cmd))
+    if (builtinCommands.TryGet(context.Name, out var cmd))
     {
-      task = cmd!.Execute(args, output, error);
-    }
-    else
-    {
-      var job = jobManager.Start(name, args, output, error, runInBackground);
-      if (runInBackground)
-      {
-        await output.WriteLineAsync($"[{job.Id}] {job.ProcessId}");
-      }
-      task = job.Completion;
+      return Task.Run(() => cmd!.Execute(context.Args, context.Output, context.Error));
     }
 
-    if (!runInBackground) await task;
+    var job = await jobManager.Start(context, runInBackground);
+    if (runInBackground)
+      await context.Output.WriteLineAsync($"[{job.Id}] {job.ProcessId}");
+    return job.Completion;
+
   }
 }

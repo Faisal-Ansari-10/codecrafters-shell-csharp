@@ -13,6 +13,12 @@ public class Parser(List<Token> tokens)
     var line = new CommandLine();
     line.Pipeline.Add(ParseCommand());
 
+    while (Match(TokenType.Pipe))
+    {
+      Advance();
+      line.Pipeline.Add(ParseCommand());
+    }
+
     if (Match(TokenType.Background)) { line.RunInBackground = true; Advance(); }
     Expect(TokenType.EOF);
     return line;

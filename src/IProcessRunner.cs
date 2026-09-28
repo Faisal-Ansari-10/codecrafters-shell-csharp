@@ -8,8 +8,6 @@ public sealed record RunContext(
   string Name,
   TextReader Input,
   bool RedirectStandardInput,
-  bool RedirectStandardOutput,
-  bool RedirectStandardError,
   string[] Args,
   TextWriter Output,
   TextWriter Error
@@ -23,7 +21,7 @@ public class ProcessRunner : IProcessRunner
 {
   async Task<(int processId, Task completion, Func<bool> isRunning)> IProcessRunner.Run(RunContext context)
   {
-    var (name, input, redirectStdin, redirectStdout, redirectStderr, args, output, error) = context;
+    var (name, input, redirectStdin, args, output, error) = context;
 
     string? resolvedPath = ResolveForValidation(name);
     if (resolvedPath is null)
@@ -42,8 +40,8 @@ public class ProcessRunner : IProcessRunner
     {
       FileName = name,
       RedirectStandardInput = redirectStdin,
-      RedirectStandardOutput = redirectStdout,
-      RedirectStandardError = redirectStderr,
+      RedirectStandardOutput = true,
+      RedirectStandardError = true,
       UseShellExecute = false,
       CreateNoWindow = true
     };
@@ -52,18 +50,15 @@ public class ProcessRunner : IProcessRunner
 
     var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
 
-    if (redirectStdout)
+    
       process.OutputDataReceived += (_, e) => { if (e.Data is not null) output.WriteLine(e.Data); };
 
-    if (redirectStderr)
       process.ErrorDataReceived += (_, e) => { if (e.Data is not null) error.WriteLine(e.Data); };
 
     process.Start();
 
     if (redirectStdin) _ = PumpInputAsync(input, process);
-    if (redirectStdout)
       process.BeginOutputReadLine();
-    if (redirectStderr)
       process.BeginErrorReadLine();
 
     var pid = process.Id;

@@ -4,7 +4,8 @@ using CodeCrafters.Shell.src;
 
 class Shell(CommandDispatcher commandDispatcher,
 AutoCompletionHandler autoCompletion,
-IJobManager jobManager)
+IJobManager jobManager,
+ICommandHistory commandHistory)
 {
   private int _tabCount;
 
@@ -27,6 +28,7 @@ IJobManager jobManager)
       string? inputLine = await ReadInput();
       if (string.IsNullOrEmpty(inputLine)) break;
 
+      commandHistory.Add(inputLine);
       var lexer = new Lexer(inputLine);
       var tokens = lexer.Tokenize();
 
@@ -59,8 +61,6 @@ IJobManager jobManager)
           Name: cmd.Name,
           Input: input,
           RedirectStandardInput: !isFirst,
-          RedirectStandardOutput: !isLast || cmd.StdoutFile is not null,
-          RedirectStandardError: true,
           Args: [.. cmd.Args],
           Output: output,
           Error: error);

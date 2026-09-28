@@ -117,15 +117,26 @@ HistoryNavigator historyNavigator)
       else if (key == ConsoleKey.UpArrow)
       {
         var previous = historyNavigator.Previous();
-        
+
         if (previous is not null)
         {
           input.Clear();
           input.Append(previous);
-        
+
           ReplaceWord(input, 0, previous);
         }
+      }
+      else if (key == ConsoleKey.DownArrow)
+      {
+        var next = historyNavigator.Next();
 
+        if (next is not null)
+        {
+          input.Clear();
+          input.Append(next);
+
+          ReplaceWord(input, 0, next);
+        }
       }
       else if (!char.IsControl(keyInfo.KeyChar))
       {

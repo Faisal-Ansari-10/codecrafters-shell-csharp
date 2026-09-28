@@ -5,7 +5,8 @@ using CodeCrafters.Shell.src;
 class Shell(CommandDispatcher commandDispatcher,
 AutoCompletionHandler autoCompletion,
 IJobManager jobManager,
-ICommandHistory commandHistory)
+ICommandHistory commandHistory,
+HistoryNavigator historyNavigator)
 {
   private int _tabCount;
 
@@ -24,10 +25,10 @@ ICommandHistory commandHistory)
         jobManager.Kill(job);
       }
 
+      historyNavigator.Reset();
       Console.Write("$ ");
       string? inputLine = await ReadInput();
       if (string.IsNullOrEmpty(inputLine)) break;
-
       commandHistory.Add(inputLine);
       var lexer = new Lexer(inputLine);
       var tokens = lexer.Tokenize();
@@ -112,6 +113,19 @@ ICommandHistory commandHistory)
       else if (key == ConsoleKey.Tab)
       {
         await HandleTab(input);
+      }
+      else if (key == ConsoleKey.UpArrow)
+      {
+        var previous = historyNavigator.Previous();
+        
+        if (previous is not null)
+        {
+          input.Clear();
+          input.Append(previous);
+        
+          ReplaceWord(input, 0, previous);
+        }
+
       }
       else if (!char.IsControl(keyInfo.KeyChar))
       {

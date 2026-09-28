@@ -1,0 +1,23 @@
+using System;
+
+namespace CodeCrafters.Shell.src;
+
+public class HistoryNavigator(ICommandHistory history)
+{
+  private int _position = history.Entries.Count;
+
+  public string? Previous()
+  {
+    var entries = history.Entries;
+    if(entries.Count == 0 || _position == 0) return null;
+
+    _position--;
+    return entries[_position];
+  }
+
+  public void Reset()
+  {
+    _position = history.Entries.Count;
+  }
+
+}

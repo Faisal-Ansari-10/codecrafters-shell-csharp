@@ -12,6 +12,7 @@ CompleteRegistry completeRegistry = new();
 ProcessRunner runner = new();
 JobManager jobManager = new(runner);
 CommandHistory commandHistory = new();
+HistoryNavigator historyNavigator = new(commandHistory);
 
 BuiltinCommandRegistry builtins = new();
 builtins.Register(new EchoCommand());
@@ -25,5 +26,5 @@ builtins.Register(new HistoryCommand(commandHistory));
 
 var cmdDispatcher = new CommandDispatcher(builtins, jobManager);
 var autoCompletion = new AutoCompletionHandler(builtins, completeRegistry, runner);
-var shell = new Shell(cmdDispatcher, autoCompletion, jobManager, commandHistory);
+var shell = new Shell(cmdDispatcher, autoCompletion, jobManager, commandHistory, historyNavigator);
 await shell.Run();

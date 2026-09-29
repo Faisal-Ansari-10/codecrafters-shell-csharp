@@ -24,6 +24,18 @@ public class HistoryCommand(ICommandHistory commandHistory) : ICommand
 
       return;
     }
+    else if (args.Length > 0 && args[0].Equals("-w"))
+    {
+      try
+      {
+        var directory = Path.GetDirectoryName(args[1]);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) Directory.CreateDirectory(directory);
+
+        await File.AppendAllLinesAsync(args[1], commandHistory.Entries);
+      }
+      catch { }
+      return;
+    }
 
     var entries = commandHistory.Entries;
     int limit = entries.Count;

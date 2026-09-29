@@ -2,7 +2,9 @@ using System.IO.Pipelines;
 using System.Text;
 using CodeCrafters.Shell.src;
 
-class Shell(CommandDispatcher commandDispatcher,
+class Shell(
+  ShellState state,
+  CommandDispatcher commandDispatcher,
 AutoCompletionHandler autoCompletion,
 IJobManager jobManager,
 ICommandHistory commandHistory,
@@ -14,24 +16,18 @@ HistoryNavigator historyNavigator)
   {
     await LoadCommandHistory();
 
-    while (true)
+    while (!state.ExitRequested)
     {
-      var jobs = jobManager.SnapshotJobs();
-      for (int i = 0; i < jobs.Count; i++)
-      {
-        var job = jobs[i];
-        if (!job.Completed) continue;
-
-        var jobline = jobManager.FormatJobLine(i, jobs);
-        Console.Out.WriteLine(jobline);
-        jobManager.Kill(job);
-      }
-
+      RemoveCompletedJobs();
       historyNavigator.Reset();
+
       Console.Write("$ ");
       string? inputLine = await ReadInput();
-      if (string.IsNullOrEmpty(inputLine)) break;
+      if (inputLine is null) break;
+      if (inputLine.Length == 0) continue;
+
       commandHistory.Add(inputLine);
+
       var lexer = new Lexer(inputLine);
       var tokens = lexer.Tokenize();
 
@@ -220,6 +216,20 @@ HistoryNavigator historyNavigator)
       }
     }
     return prefix;
+  }
+
+  private void RemoveCompletedJobs()
+  {
+    var jobs = jobManager.SnapshotJobs();
+    for (int i = 0; i < jobs.Count; i++)
+    {
+      var job = jobs[i];
+      if (!job.Completed) continue;
+
+      var jobline = jobManager.FormatJobLine(i, jobs);
+      Console.Out.WriteLine(jobline);
+      jobManager.Kill(job);
+    }
   }
 
   private async Task LoadCommandHistory()

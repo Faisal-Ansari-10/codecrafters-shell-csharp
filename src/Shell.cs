@@ -12,6 +12,8 @@ HistoryNavigator historyNavigator)
 
   public async Task Run()
   {
+    await LoadCommandHistory();
+
     while (true)
     {
       var jobs = jobManager.SnapshotJobs();
@@ -72,6 +74,8 @@ HistoryNavigator historyNavigator)
 
       if (!line.RunInBackground) await Task.WhenAll(stages);
     }
+
+    await SaveCommandHistory();
   }
 
 
@@ -216,5 +220,21 @@ HistoryNavigator historyNavigator)
       }
     }
     return prefix;
+  }
+
+  private async Task LoadCommandHistory()
+  {
+    var path = Environment.GetEnvironmentVariable("HISTFILE");
+    if (string.IsNullOrEmpty(path)) return;
+
+    await commandHistory.LoadAsync(path);
+  }
+
+  private async Task SaveCommandHistory()
+  {
+    var path = Environment.GetEnvironmentVariable("HISTFILE");
+    if (string.IsNullOrEmpty(path)) return;
+
+    await commandHistory.WriteAsync(path);
   }
 }

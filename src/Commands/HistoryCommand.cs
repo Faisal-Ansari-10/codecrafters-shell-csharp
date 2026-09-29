@@ -8,6 +8,23 @@ public class HistoryCommand(ICommandHistory commandHistory) : ICommand
 
   public async Task Execute(string[] args, TextWriter output, TextWriter error)
   {
+
+    if (args.Length > 0 && args[0].Equals("-r"))
+    {
+      try
+      {
+        foreach (var command in await File.ReadAllLinesAsync(args[1]))
+        {
+          if (string.IsNullOrEmpty(command)) continue;
+
+          commandHistory.Add(command);
+        }
+      }
+      catch { }
+
+      return;
+    }
+
     var entries = commandHistory.Entries;
     int limit = entries.Count;
 

@@ -11,7 +11,8 @@ using CodeCrafters.Shell.src.Commands;
 CompleteRegistry completeRegistry = new();
 ProcessRunner runner = new();
 JobManager jobManager = new(runner);
-CommandHistory commandHistory = new();
+FileStore fileStore = new();
+CommandHistory commandHistory = new(fileStore);
 HistoryNavigator historyNavigator = new(commandHistory);
 
 BuiltinCommandRegistry builtins = new();

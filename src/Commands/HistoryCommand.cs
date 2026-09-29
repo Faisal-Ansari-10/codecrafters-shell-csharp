@@ -11,29 +11,18 @@ public class HistoryCommand(ICommandHistory commandHistory) : ICommand
 
     if (args.Length > 0 && args[0].Equals("-r"))
     {
-      try
-      {
-        foreach (var command in await File.ReadAllLinesAsync(args[1]))
-        {
-          if (string.IsNullOrEmpty(command)) continue;
-
-          commandHistory.Add(command);
-        }
-      }
-      catch { }
+      await commandHistory.LoadAsync(args[1]);
 
       return;
     }
     else if (args.Length > 0 && args[0].Equals("-w"))
     {
-      try
-      {
-        var directory = Path.GetDirectoryName(args[1]);
-        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory)) Directory.CreateDirectory(directory);
-
-        await File.AppendAllLinesAsync(args[1], commandHistory.Entries);
-      }
-      catch { }
+      await commandHistory.WriteAsync(args[1]);
+      return;
+    }
+    else if (args.Length > 0 && args[0].Equals("-a"))
+    {
+      await commandHistory.AppendAsync(args[1]);
       return;
     }
 

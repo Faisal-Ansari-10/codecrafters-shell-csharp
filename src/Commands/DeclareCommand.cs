@@ -1,4 +1,5 @@
 using System;
+using System.Text.RegularExpressions;
 
 namespace CodeCrafters.Shell.src.Commands;
 
@@ -25,7 +26,14 @@ public class DeclareCommand : ICommand
       var delimiterIndex = args[0].IndexOf('=');
       var variable = args[0][..delimiterIndex];
       var value = args[0][(delimiterIndex + 1)..];
+
+      if (!Regex.IsMatch(variable, @"^[A-Za-z_][A-Za-z0-9_]*$"))
+      {
+        return output.WriteLineAsync($"{Name}: `{args[0]}': not a valid identifier");
+      }
+
       _variables[variable] = value;
+
     }
 
     return Task.CompletedTask;

@@ -15,9 +15,9 @@ public class DeclareCommand : ICommand
       var outputLine = $"{Name}: {args[1]}: not found";
       if (_variables.TryGetValue(args[1], out var value))
       {
-        outputLine = $"{Name}: -- {args[1]}=\"{value}\"";
+        outputLine = $"{Name} -- {args[1]}=\"{value}\"";
       }
-      
+
       return output.WriteLineAsync(outputLine);
     }
     else if (args.Length > 0 && args[0].Contains('='))

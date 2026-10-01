@@ -6,11 +6,26 @@ public class DeclareCommand : ICommand
 {
   public string Name => "declare";
 
-  public  Task Execute(string[] args, TextWriter output, TextWriter error)
+  private readonly Dictionary<string, string> _variables = [];
+
+  public Task Execute(string[] args, TextWriter output, TextWriter error)
   {
     if (args.Length > 1 && args[0].Equals("-p"))
     {
-      return output.WriteLineAsync($"{Name}: {args[1]}: not found");
+      var outputLine = $"{Name}: {args[1]}: not found";
+      if (_variables.TryGetValue(args[1], out var value))
+      {
+        outputLine = $"{Name}: -- {args[1]}=\"{value}\"";
+      }
+      
+      return output.WriteLineAsync(outputLine);
+    }
+    else if (args.Length > 0 && args[0].Contains('='))
+    {
+      var delimiterIndex = args[0].IndexOf('=');
+      var variable = args[0][..delimiterIndex];
+      var value = args[0][(delimiterIndex + 1)..];
+      _variables[variable] = value;
     }
 
     return Task.CompletedTask;
